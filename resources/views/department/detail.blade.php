@@ -37,17 +37,18 @@
                             </tr>
                             </thead>
                             <tbody>
-                            @foreach($belong_list as $belong_user)
+                            @foreach($belong_department as $obj)
                             <tr>
 
-                                    <td>{{$belong_user->id}}</td>
-                                    <td>{{$belong_user->name}}</td>
+                                    <td> {{$obj->user_id}}</td>
+                                    <td> {{$obj->be_depart->name}}</td>
                             </tr>
                             @endforeach
                             </tbody>
                         </table>
                     </div>
                 </div>
+                <hr>
             </div>
         </div>
     </div>

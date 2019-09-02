@@ -41,7 +41,7 @@
                         <thead>
                         <tr>
                             <th><a href="/department?sort=id">#</a></th>
-                            <th><a href="/department?sort=department_name">ユーザ名</a></th>
+                            <th><a href="/department?sort=department_name">部署名</a></th>
 
                             <th>操作</th>
                         </tr>

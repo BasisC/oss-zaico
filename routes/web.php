@@ -52,5 +52,6 @@ Route::group(['middleware' => 'auth'], function() {
     Route::post('/department/detail/{id}/belong','DepartmentController@belonging');
     Route::get('/department/add','DepartmentController@add');
     Route::post('/department/add','DepartmentController@create');
+    Route::get('/department/edit/{id}','DepartmentController@edit');
 
 });

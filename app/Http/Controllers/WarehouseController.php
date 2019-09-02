@@ -22,8 +22,8 @@ class WarehouseController extends Controller
 	public function index(Request $request ){
 	    //ログインしていないまたは権限を持っていないユーザをアクセスさせない。
         $login_chk =Auth::check();
-        if(self::user_chk($login_chk,auth::user()) !==null ){
-            switch(self::user_chk($login_chk,auth::user())) {
+        if($this->user_chk($login_chk,auth::user()) !==null ){
+            switch($this->user_chk($login_chk,auth::user())) {
                 case 'permission';
                     return redirect ('/home')->with(MessageDef::ERROR, MessageDef::ERROR_PERMISSION);
                     break;
@@ -217,7 +217,7 @@ class WarehouseController extends Controller
             //return redirect ('/home')->with(MessageDef::ERROR, MessageDef::ERROR_PERMISSION);
             return 'permission';
         }
-        if($auth_user->type == SystemDef::EMPLOYEE) {
+        if($auth_user->type == SystemDef::ADMIN) {
             //return redirect('/home')->with(MessageDef::ERROR, MessageDef:: ERROR_TYPE);
             return 'employee';
         }

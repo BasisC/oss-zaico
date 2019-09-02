@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -23,8 +24,8 @@ class UserController extends Controller
        //変数宣言
        $sort = $request->sort;
        //検索項目のデータを決定する
-       $name = self::getValue($request,'name',$sort,'find_name');
-       $email = self::getValue($request,'email',$sort,'find_email');
+       $name = $this->getValue($request,'name',$sort,'find_name');
+       $email = $this->getValue($request,'email',$sort,'find_email');
        //ソートの項目が選択されていない場合、IDが選択される
        if($sort == null){
            $sort = 'id';
@@ -125,12 +126,12 @@ class UserController extends Controller
            }
            $user->name = $request->name;
            $user->email = $request->email;
-           $user->per_department_create = self::setValue($request->per_department_create);
-           $user->per_department_update = self::setValue($request->per_department_update);
-           $user->per_department_delete = self::setValue($request->per_department_delete);
-           $user->per_group_create = self::setValue($request->per_group_create);
-           $user->per_group_update = self::setValue($request->per_group_update);
-           $user->per_group_delete = self::setValue($request->per_group_delete);
+           $user->per_department_create = $request->per_department_create == 1 ? 1: 0;
+           $user->per_department_update= $request->per_department_update == 1 ? 1: 0;
+           $user->per_department_delete = $request->per_department_delete == 1 ? 1: 0;
+           $user->per_group_create = $request->per_group_create == 1 ? 1: 0;
+           $user->per_group_update = $request->per_group_update == 1 ? 1: 0;
+           $user->per_group_delete = $request->per_group_delete == 1 ? 1: 0;
            $user->save();
            DB::commit();
            return redirect("/user")->with(MessageDef::SUCCESS,MessageDef::SUCCESS_EDIT_USER);
@@ -141,21 +142,6 @@ class UserController extends Controller
        }
    }
 
-    /**
-     * [update]にて使用。
-     * セットした値$valueが1の時、1を返す。
-     * $valueの値が空白の場合は0を返す
-     * @param $value
-     * @return int
-     */
-    protected function setValue($value){
-        if($value == 1){
-            return 1;
-        }
-        else{
-            return 0;
-        }
-    }
 
     /**
      * [update]時に使用するバリデーション。
@@ -168,9 +154,22 @@ class UserController extends Controller
     protected function rules($name ,$email)
     {
         return [
-            'name' => 'required|string|max:191|unique:users,name,'.$name.',name',
-            'email' => 'required|string|email|max:191|unique:users,email,'.$email.',email',
+           // 'name' => 'required|string|max:191|unique:users,name,'.$name.',name',
+            //'email' => 'required|string|email|max:191|unique:users,email,'.$email.',email',
             'password' => 'string|min:6|nullable',
+            'email' => [
+                Rule::unique('users', 'email')->whereNot('email', $email),
+                'required',
+                'email',
+                'max:191'
+            ],
+            'name' => [
+                Rule::unique('users', 'name')->whereNot('name', $name),
+                'required',
+                'string',
+                'max:191'
+
+            ]
         ];
     }
 

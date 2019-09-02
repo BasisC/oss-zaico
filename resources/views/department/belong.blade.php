@@ -46,12 +46,18 @@
                                                 <tbody>
                                                 @foreach($users as $user)
                                                     <tr>
-                                                        <td><input type="checkbox" name="user_id[]"  value="{{ $user->id }}"  @if(in_array($user->id, $belong_user_id,true))checked @endif> : {{$user->name}} </td>
+                                                        <td><input type="checkbox" name="user_id[]"  value="{{ $user->id }}" @if(in_array($user->id, $belong_ids,true))checked @endif> : {{$user->name}} </td>
                                                     </tr>
                                                 @endforeach
                                             </table>
                                         </div>
+
+
+
+
                                     </div>
+
+
 
 
                         <div class="form-group">

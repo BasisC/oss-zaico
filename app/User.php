@@ -44,6 +44,19 @@ class User extends Authenticatable
         }
     }
 
+    public function belongdepartments(){
+        return $this->hasMany('App\BelongDepartment');
+    }
+
+    public function user_test(){
+        return "testtesttest";
+    }
+
+    public function be_depart(){
+        return $this->hasOne('App\BelongDepartment');
+    }
+
+
     /*
     public static $rule = array(
         'name' => 'required|string|max:255|unique:users,name,'.Auth::user()->name.',name',
