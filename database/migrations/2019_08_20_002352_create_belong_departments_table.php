@@ -31,14 +31,14 @@ class CreateBelongDepartmentsTable extends Migration
              $table->foreign('department_id')
                 ->references('id')
                 ->on('departments')
-                ->onDelete('restrict')
-                ->onUpdate('restrict');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
                 
              $table->foreign('user_id')
                 ->references('id')
                 ->on('users')
-                ->onDelete('restrict')
-                ->onUpdate('restrict');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
             
             
         });

@@ -105,7 +105,7 @@
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/group">
-              ☆倉庫グループ管理
+              ★倉庫グループ管理
             </a>
           </li>
           <li class="nav-item">

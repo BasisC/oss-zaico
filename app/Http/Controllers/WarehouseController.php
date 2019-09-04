@@ -8,7 +8,7 @@ use App\Warehouse;
 use App\SystemDef;
 use App\MessageDef;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Validation\Rule;
 
 
 class WarehouseController extends Controller
@@ -20,26 +20,18 @@ class WarehouseController extends Controller
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|\Illuminate\View\View
      */
 	public function index(Request $request ){
-	    //ログインしていないまたは権限を持っていないユーザをアクセスさせない。
-        $login_chk =Auth::check();
-        if($this->user_chk($login_chk,auth::user()) !==null ){
-            switch($this->user_chk($login_chk,auth::user())) {
-                case 'permission';
-                    return redirect ('/home')->with(MessageDef::ERROR, MessageDef::ERROR_PERMISSION);
-                    break;
-                case 'employee';
-                    return redirect ('/home')->with(MessageDef::ERROR, MessageDef::ERROR_TYPE);
-                    break;
-            }
-        }
         //$sortの初期値を設定する
 	    $sort = $request->sort;
 	    if($sort == null){
             $sort = 'id';
         }
 	    //倉庫の情報を取得。ぺジネーションして表示する
-		$items = Warehouse::orderBy($sort,'asc') ->paginate(5);
-		$param = ['items'=>$items ,'sort' => $sort];
+        try {
+            $items = Warehouse::orderBy($sort, 'asc')->paginate(5);
+        }catch(\Exception $e){
+	        return redirect('/warehouse')->with(MessageDef::ERROR,MessageDef::ERROR_UNEXPECT);
+        }
+	    $param = ['items'=>$items ,'sort' => $sort];
 		return view('warehouse.index',$param);
 	}
 
@@ -49,18 +41,6 @@ class WarehouseController extends Controller
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
 	public function add(Request $request){
-        //ログインしていないまたは権限を持っていないユーザをアクセスさせない
-        $login_chk =Auth::check();
-        if(self::user_chk($login_chk,auth::user()) !==null ){
-            switch(self::user_chk($login_chk,auth::user())) {
-                case 'permission';
-                    return redirect ('/warehouse')->with(MessageDef::ERROR, MessageDef::ERROR_PERMISSION);
-                    break;
-                case 'employee';
-                    return redirect ('/warehouse')->with(MessageDef::ERROR, MessageDef::ERROR_TYPE);
-                    break;
-            }
-        }
         //登録画面を開く
 	    return view('warehouse.add');
     }
@@ -71,18 +51,6 @@ class WarehouseController extends Controller
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function create(Request $request){
-        //ログインしていないまたは権限を持っていないユーザをアクセスさせない
-        $login_chk =Auth::check();
-        if(self::user_chk($login_chk,auth::user()) !==null ){
-            switch(self::user_chk($login_chk,auth::user())) {
-                case 'permission';
-                    return redirect ('/warehouse')->with(MessageDef::ERROR, MessageDef::ERROR_PERMISSION);
-                    break;
-                case 'employee';
-                    return redirect ('/warehouse')->with(MessageDef::ERROR, MessageDef::ERROR_TYPE);
-                    break;
-            }
-        }
         //変数宣言
         $user_id = auth::user()->id;
         $this->validate($request, Warehouse::$create_rules);
@@ -111,19 +79,7 @@ class WarehouseController extends Controller
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse|\Illuminate\View\View
      */
     public function edit(Request $request){
-        //ログインしていないまたは権限を持っていないユーザをアクセスさせない
-        $login_chk =Auth::check();
         $warehouse = Warehouse::find($request->id);
-        if(self::user_chk($login_chk,auth::user()) !==null ){
-            switch(self::user_chk($login_chk,auth::user())) {
-                case 'permission';
-                    return redirect ('/warehouse')->with(MessageDef::ERROR, MessageDef::ERROR_PERMISSION);
-                    break;
-                case 'employee';
-                    return redirect ('/warehouse')->with(MessageDef::ERROR, MessageDef::ERROR_TYPE);
-                    break;
-            }
-        }
         //もし、倉庫の値を取得できなかったら、エラー出力
         if($warehouse == null){
             return redirect('/warehouse')->with(MessageDef::ERROR, MessageDef::ERROR_NON_ID);
@@ -139,29 +95,20 @@ class WarehouseController extends Controller
      */
     public function update(Request $request){
         //ログインしていないまたは権限を持っていないユーザをアクセスさせない
-        $login_chk =Auth::check();
         $edit_warehouse_id = $request->id;
         $this->validate($request,Warehouse::$edit_rules);
+        //編集する倉庫を表示する
         $warehouse = Warehouse::find( $edit_warehouse_id);
         $form = $request->all();
         unset($form['_token']);
-        if(self::user_chk($login_chk,auth::user()) !==null ){
-            switch(self::user_chk($login_chk,auth::user())) {
-                case 'permission';
-                    return redirect ('/warehouse')->with(MessageDef::ERROR, MessageDef::ERROR_PERMISSION);
-                    break;
-                case 'employee';
-                    return redirect ('/warehouse')->with(MessageDef::ERROR, MessageDef::ERROR_TYPE);
-                    break;
-            }
-        }
         DB::beginTransaction();
 	    try{
+	        //正常ケース
 	        $warehouse ->fill($form)->save();
             DB::commit();
             return redirect('/warehouse')->with(MessageDef::SUCCESS, MessageDef::SUCCESS_EDIT_WAREHOUSE);
         } catch (\Exception  $e) {
-        //エラー時
+	        //エラー時
             DB::rollBack();
         return redirect("/warehouse/edit/${edit_warehouse_id}")->with(MessageDef::ERROR, MessageDef:: ERROR_EDIT );
 	    }
@@ -175,19 +122,7 @@ class WarehouseController extends Controller
      */
 
     public function delete(Request $request ,$id){
-        //ログインしていないまたは権限を持っていないユーザをアクセスさせない
-        $login_chk =Auth::check();
         $warehouse = Warehouse::find($id);
-        if(self::user_chk($login_chk,auth::user()) !==null ){
-            switch(self::user_chk($login_chk,auth::user())) {
-                case 'permission';
-                    return redirect ('/warehouse')->with(MessageDef::ERROR, MessageDef::ERROR_PERMISSION);
-                    break;
-                case 'employee';
-                    return redirect ('/warehouse')->with(MessageDef::ERROR, MessageDef::ERROR_TYPE);
-                    break;
-            }
-        }
         //削除倉庫を取得できなかった場合の処理
         if($warehouse == null){
             return redirect('/home')->with(MessageDef::ERROR, MessageDef::ERROR_OLD_DELETE);
@@ -217,12 +152,21 @@ class WarehouseController extends Controller
             //return redirect ('/home')->with(MessageDef::ERROR, MessageDef::ERROR_PERMISSION);
             return 'permission';
         }
-        if($auth_user->type == SystemDef::ADMIN) {
+        if($auth_user->type == SystemDef::EMPLOYEE) {
             //return redirect('/home')->with(MessageDef::ERROR, MessageDef:: ERROR_TYPE);
             return 'employee';
         }
     }
 
-
-
+    protected function edit_rules($department_name )
+    {
+        return [
+            'department_name' => [
+                Rule::unique('departments', 'department_name')->whereNot('department_name', $department_name),
+                'required',
+                'string',
+                'max:191'
+            ]
+        ];
+    }
 }

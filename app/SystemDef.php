@@ -17,4 +17,8 @@ class SystemDef
 
     const OWN_PERMISSION = 1;
     const NO_PERMISSION = 0;
+
+    const PAGE_NUMBER = 5;
+
+
 }

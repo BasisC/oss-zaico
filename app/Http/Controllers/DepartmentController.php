@@ -7,10 +7,13 @@ use App\SystemDef;
 use Illuminate\Http\Request;
 use App\Department;
 use App\User;
+use App\Target;
+use App\Group;
 use App\BelongDepartment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Builder  ;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\Rule;
 
 class DepartmentController extends Controller
 {
@@ -22,19 +25,12 @@ class DepartmentController extends Controller
      */
     public function index(Request $request){
         //ソートする項目が選択されていなければ、IDで昇順に並べる
-        $sort = $request->sort;
-        if($sort == null){
-            $sort = 'id';
-        }
+        $sort = $this->setValue($request,'sort','id');
         //ぺジネーション設定してデータを取得
-        $items = Department::orderBy($sort,'asc')->paginate(5);
+        $items = Department::orderBy($sort,'asc')->paginate(SystemDef::PAGE_NUMBER);
         $param = ['items'=>$items,'sort'=>$sort];
         return view ('department.index',$param);
     }
-
-
-
-
 
     public function add(Request $request){
         //登録画面を表示する
@@ -43,6 +39,12 @@ class DepartmentController extends Controller
 
     /**
      * 部署を新しく登録する
+     * 【正常ケース】
+     * ・addにて入力したデータで新しく部署を登録する
+     *
+     * 【エラーケース】
+     * ・部署IDに本来存在しないものを選択した => 「/department」に遷移。「ERROR_UNEXPECT」を出力
+     * ・バリデーションエラー
      *
      * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
@@ -67,8 +69,14 @@ class DepartmentController extends Controller
         }
 
     }
+
     /**
      * 所属するユーザを表示する画面
+     * 【正常ケース】
+     * ・選択した部署に所属しているユーザを表示する。
+     *
+     * 【エラーケース】
+     * ・部署IDに本来存在しないものを選択した => 「/department」に遷移。「ERROR_UNEXPECT」を出力
      *
      * @param Request $request
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
@@ -76,13 +84,38 @@ class DepartmentController extends Controller
     public function detail(Request $request){
         //必要なデータを取得する
         $department = Department::find($request->id);
-        $belong_department = BelongDepartment::where('department_id',$request->id)->get();
-        $param = ['department'=>$department,'belong_department'=>$belong_department];
+        //存在しないIDを取得しようとした時の処理
+        if($department == null){
+            return redirect('/department')->with(MessageDef::ERROR,MessageDef::ERROR_NON_ID);
+        }
+        $sort = $request->sort;
+        $name = $this->getSessionValue($request,'name',$sort,'find_name_department_detail');
+        if($sort == null){
+            $sort = 'user_id';
+        }
+        try {
+            //joinを使ってテーブルを結合する
+            $belong_department = DB::table('users')->join('belong_departments', 'users.id', '=', 'belong_departments.user_id')
+                ->where('department_id', $request->id)
+                ->where('name', 'like', "%" . $name . "%")
+                ->orderBy($sort, 'asc')
+                ->paginate(SystemDef::PAGE_NUMBER);
+        }catch(\Exception $e){
+            //ありえそうなエラーとしては、ソートにしらない項目を指定される、取得ができなかったパターン
+            return redirect("/department/detail/".$request->id)->with(MessageDef::ERROR,MessageDef::ERROR_UNEXPECT);
+        }
+        $param = ['department'=>$department,'belong_department'=>$belong_department,'sort'=>$sort,'name'=>$name];
         return view('department.detail',$param);
     }
 
+
     /**
      * 所属画面を表示する
+     * 【正常ケース】
+     * ・選択した部署に所属しているユーザにチェックをつけ、所属していないユーザにはチェックをつけないで表示する。
+     *
+     * 【エラーケース】
+     * ・部署IDに本来存在しないものを選択した => 「/department」に遷移。「ERROR_UNEXPECT」を出力
      *
      * @param Request $request
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
@@ -91,6 +124,9 @@ class DepartmentController extends Controller
         //所属に必要なデータを取得する
         $belong_ids = array();
         $department = Department::find($request->id);
+        if($department == null){
+            return redirect('/department')->with(MessageDef::ERROR,MessageDef::ERROR_NON_ID);
+        }
         $users = User::all();
         $belongs = BelongDepartment::where('department_id',$request->id)->get();
         //既に所属しているユーザのユーザIDを取得する。
@@ -104,8 +140,16 @@ class DepartmentController extends Controller
     }
 
     /**
-     * 部署に新しくユーザを所属させる
-     * 部署に所属しているユーザの所属を外す
+     * 部署にユーザを所属させる
+     * 【正常ケース】
+     * ・選択したユーザを「所属」させる。チェックを外したユーザを「所属から外す」。
+     * 　=> 「/department」に遷移。「SUCCESS_TARGET」を出力。
+     *
+     * 【エラーケース】
+     * ・部署IDに本来存在しないものを選択した => 「/department」に遷移。「ERROR_UNEXPECT」を出力
+     * ・所属処理を失敗した => 「/department」に遷移。「ERROR_UNEXPECT」を出力
+     * ・所属の解除を失敗した => 「/department」に遷移。「ERROR_UNEXPECT」を出力
+     *
      *
      * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
@@ -113,70 +157,323 @@ class DepartmentController extends Controller
     public function belonging(Request $request){
        //所属に必要なデータを取得する
         /*user_id => 所属画面のチェックボックスにチェックされたユーザID
-         *belong_list => 部署に所属しているユーザのデータ
+         *already_belong_users => 部署に所属しているユーザのデータ
+         * already_belong_user_ids => 部署に所属しているユーザのID
          */
-        $user_id = $request->user_id;
-        $belong_list = BelongDepartment::where('department_id',$request->group_id)->get();
-        //部署所属画面にて、どのユーザにもチェックがついていない場合（こちらは全てのチェックが外れている時）
-        //処理としては、部署に所属していたユーザ全ての所属を解除する
-        if($user_id == null){
-            foreach($belong_list as $belong){
-                try {
-                    DB::beginTransaction();
-                    BelongDepartment::where('user_id', $belong->user_id)->delete();
-                    DB::commit();
-                }catch(\Exception $e){
-                    //エラー時
-                    DB::rollBack();
-                    return redirect('/department')->with(MessageDef::ERROR,MessageDef::ERROR_UNEXPECT);
-                }
+        $user_ids = $request->user_id;
+        $already_belong_users = BelongDepartment::where('department_id',$request->department_id)->get();
+        $already_belong_user_ids = array();
+        //部署に所属しているユーザのIDを配列に格納する
+        foreach($already_belong_users as $already_belong_user){
+            array_push($already_belong_user_ids,$already_belong_user['user_id']);
+        }
+
+        if($user_ids == null) {
+            DB::beginTransaction();
+            try {//チェックが一つもついていない場合の処理。選択された部署に所属しているユーザの所属を解除する
+                BelongDepartment::where('department_id', $request->department_id)->delete();
+                DB::commit();
+            } catch (\Exception $e) {
+                //エラー時
+                DB::rollBack();
+                return redirect('/department')->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
             }
             return redirect('/department')->with(MessageDef::SUCCESS,MessageDef::SUCCESS_BELONG_DEPARTMENT);
         }else{
-            //チェックボックスにチェックがついていたユーザの、チェックを外した時の処理。（こちらは一つでもチェックがついている時）
-            //処理としてはチェックを外したユーザの所属を解除する
-            foreach($belong_list as $belong){
+            //チェックがついていないユーザのみ削除する
+            foreach( $already_belong_user_ids as $already_belong_user_id){
                 DB::beginTransaction();
-                //所属済のユーザとチェックを外したユーザのIDを特定する
-                $chk=array_search($belong->user_id, $user_id);
-                //もし所属済リストの中にユーザIDがあるかつ、送信された値にユーザIDがなかった時、削除
-                if($chk == false){
-                    try{
-                        BelongDepartment::where('user_id',$belong->user_id)->delete();
-                        DB::commit();
-                    }catch(\Exception $e){
-                        DB::rollBack();
-                        return redirect('/department')->with(MessageDef::ERROR,MessageDef::ERROR_UNEXPECT);
-                    }
-                }
+                $chk = in_array($already_belong_user_id, $user_ids,true);
+               try {
+                   if ($chk == false) {
+                       BelongDepartment::where('user_id', $already_belong_user_id)->where('department_id', $request->department_id)->delete();
+                       DB::commit();
+                   }
+               }catch (\Exception $e) {
+                   //エラー時
+                   DB::rollBack();
+                   return redirect('/department')->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
+
+               }
             }
         }
-        //まだ登録されていないユーザだった場合の処理。
-        foreach($user_id as $id){
+        //チェックがついているユーザの所属処理
+        foreach($user_ids as $user_id) {
+            $already_belong = BelongDepartment::where('department_id', $request->department_id)->where('user_id', $user_id)->first();
             DB::beginTransaction();
-            $belong_department = new BelongDepartment;
-            $belonged = BelongDepartment::where('department_id',$request->group_id)->where("user_id",$id)->first();
-            if($belonged == null){
-                try{
-                    $belong_department -> department_id = $request->group_id;
-                    $belong_department -> user_id = $id;
-                    $belong_department->save();
+            if ($already_belong == null) {
+                try {
+                    $belong_user = new BelongDepartment;
+                    $belong_user->department_id = $request->department_id;
+                    $belong_user->user_id = $user_id;
+                    $belong_user->save();
                     DB::commit();
-                }catch(\Exception $e){
+                }catch (\Exception $e) {
+                    //エラー時
                     DB::rollBack();
-                    return redirect('/department')->with(MessageDef::ERROR,MessageDef::ERROR_UNEXPECT);
+                    return redirect('/department')->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
                 }
             }
         }
         return redirect('/department')->with(MessageDef::SUCCESS,MessageDef::SUCCESS_BELONG_DEPARTMENT);
     }
 
+    /**
+     * 部署の編集画面を表示する
+     * [エラーケース]
+     * ・編集する部署の情報を取得できない時　=> 「/department」に戻る。エラーを表示する
+     * ・編集する部署の情報を取得できたが、中身が「null」の時 => 「/department」に戻る。エラーを表示する
+     *
+     * [正常ケース]
+     * ・編集する部署の情報を取得し、中身がある時 => [/department/edit/{department_id}]に遷移する
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse|\Illuminate\View\View
+     */
     public function edit(Request $request){
-        $department = Department::find($request->id);
-        return view('department.edit',['form'=>$department]);
+        try{//編集する部署の情報を取得する
+            $form = Department::find($request->id);
+            if($form == null){
+                //情報を取得できない時（エラーケース）
+                return redirect('/department')->with(MessageDef::ERROR,MessageDef::ERROR_NON_ID);
+            }else{
+                //情報を取得できた時（正常ケース）
+                return view('department.edit',['form'=>$form]);
+            }
+        }catch(\Exception $e){
+            //編集する部署情報の取得に失敗した時
+            return redirect('/department')->with(MessageDef::ERROR,MessageDef::ERROR_NOT_GET_DB);
+        }
+
     }
 
+    /**
+     * 編集画面にて入力した情報をDBに反映する処理
+     *
+     * 【エラーケース】
+     * ・バリデーションエラー => 「/detail/edit/{department_id}」に戻る
+     * ・更新処理の失敗 => 「/detail/edit/{department_id}」に戻る。エラー「ERROR_EDIT」を出力。
+     *
+     * 【正常ケース】
+     * ・バリデーションをクリアし、更新処理成功した場合 => 「/detail」に遷移する。「SUCCESS_EDIT_DEPARTMENT」を出力する
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request){
+        $this->validate($request,$this->edit_rules($request->department_name));
+        $department = Department::find($request->id);
+        $id = $request->id;
+        DB::beginTransaction();
+        try{
+            $department->department_name = $request->department_name;
+            $department->save();
+            DB::commit();
+            return redirect('/department')->with(MessageDef::SUCCESS,MessageDef::SUCCESS_EDIT_DEPARTMENT);
+        } catch (\Exception  $e) {
+            //エラー時
+            DB::rollBack();
+            return redirect("/department/edit/${id}")->with(MessageDef::ERROR, MessageDef:: ERROR_EDIT );
+        }
+    }
 
+    /**
+     * 選択した部署を削除する
+     *
+     * 【エラーケース】
+     * ・削除する部署を取得できなかった => 「/department」に遷移。エラー「ERROR_OLD_DELETE」を出力する
+     * ・部署の削除に失敗した => 「/department」に遷移。エラー「ERROR_DELETE」を出力する
+     *
+     * 【正常ケース】
+     *・削除する部署の取得に成功し削除に成功する =>　「/department 」に遷移。削除完了「SUCCESS_DELETE_DEPARTMENT」を出力する。
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function delete(Request $request){
+        $department = Department::find($request->id);
+        //削除部署を取得できなかった場合の処理
+        if($department == null){
+            return redirect('/department')->with(MessageDef::ERROR, MessageDef::ERROR_OLD_DELETE);
+        }
+        //データベースの登録処理開始
+        DB::beginTransaction();
+        try{
+            $department->delete();
+            DB::commit();
+            return redirect('/department')->with(MessageDef::SUCCESS, MessageDef::SUCCESS_DELETE_DEPARTMENT);
+        }catch(\Exception $e) {
+            //エラー時
+            info($e->getMessage());
+            DB::rollBack();
+            return redirect('/department')->with(MessageDef::ERROR, MessageDef::ERROR_DELETE);
+        }
+    }
+
+    /**
+     * update時のバリデーションルール
+     * @param $department_name
+     * @return array
+     */
+    protected function edit_rules($department_name )
+    {
+        return [
+            'department_name' => [
+                Rule::unique('departments', 'department_name')->whereNot('department_name', $department_name),
+                'required',
+                'string',
+                'max:191'
+            ]
+        ];
+    }
+
+    /**
+     *操作対象になっている部署を表示する
+     *
+     * 【エラーケース】
+     * ・存在しない部署のIDを選択する => 「/department」に遷移。エラー「ERROR_NON_ID」を出力する
+     * ・部署の操作対象になっているグループの取得に失敗する => 「/department」遷移。エラー「ERROR_UNEXPECT」を出力する
+     *
+     * 【正常ケース】
+     * ・存在している部署のIDを選択肢、操作対象になっているグループの取得に成功する
+     *    => 「/department/target_list/{department_id}」に遷移する。表示する
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse|\Illuminate\View\View
+     */
+    public function targetList(Request $request){
+        //部署を取得する
+        $department = Department::find($request->id);
+        if($department == null){
+            //存在しない部署IDを選択した場合の処理。
+            return redirect('/department')->with(MessageDef::ERROR,MessageDef::ERROR_NON_ID);
+        }
+        $sort = $this->setValue($request,'sort','group_id');
+        try {
+            //正常ケース
+            $targets = DB::table('groups')->join('targets', 'groups.id', '=', 'targets.group_id')
+                ->where('department_id',$request->id)
+                ->orderBy($sort, 'asc')
+                ->paginate(SystemDef::PAGE_NUMBER);
+        }catch(\Exception $e){
+            //情報の取得に失敗したケース
+            return redirect('/department/target_list/'.$request->id)->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
+        }
+        //取得した情報をセットしviewに送る
+        $param = ['department'=>$department,'targets'=>$targets,'sort'=>$sort];
+        return view('department.warehouse_detail',$param);
+    }
+
+    /**
+     * 操作対象にする画面を表示する
+     * 【エラーケース】
+     * ・存在しない部署のIDを選択した => 「/department」に遷移。エラー「ERROR_NON_ID」を出力する
+     *
+     * 【正常ケース】
+     * ・操作対象にする画面を表示する
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\View\Factory|\Illuminate\Http\RedirectResponse|\Illuminate\View\View
+     */
+    public function target(Request $request){
+        //所属に必要なデータを取得する
+        $department = Department::find($request->id);
+        if($department == null){
+            return redirect('/department')->with(MessageDef::ERROR,MessageDef::ERROR_NON_ID);
+        }
+        //全てのグループ
+        $groups = Group::all();
+        //操作対象になっているグループのID
+        $targets = Target::where('department_id',$request->id)->get();
+        $target_groups = array();
+        foreach($targets as $target){
+            //操作対象になっているグループIDを配列に入れる。（array_searchを行うため）
+            array_push($target_groups,$target['group_id']);
+        }
+        //取得したデータをセットし送信する
+        $param = ['department'=>$department,'groups'=>$groups,'target_groups'=>$target_groups];
+        return view('department.target',$param);
+    }
+
+    /**
+     * 操作対象を変更を行う
+     * 【正常ケース】
+     * ・選択したグループを「操作対象」にする。チェックを外したグループを「操作対象から外す」。
+     * 　=> 「/department」に遷移。「SUCCESS_TARGET」を出力。
+     *
+     * 【エラーケース】
+     * ・部署IDに本来存在しないものを選択した => 「/department」に遷移。「ERROR_UNEXPECT」を出力
+     * ・操作対象にすることを失敗した => 「/department」に遷移。「ERROR_UNEXPECT」を出力
+     * ・操作対象解除を失敗した => 「/department」に遷移。「ERROR_UNEXPECT」を出力
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function targeting(Request $request)
+    {
+        //操作対象に必要なデータを取得する
+        /*group_ids => 操作対象画面のチェックボックスにチェックされたグループID
+         *already_target_groups => 操作対象になっているグループのデータ
+         *already_targets_group_idsb=> 操作対象になっているグループのID
+         */
+        $group_ids = $request->group_id;
+        $already_target_groups = Target::where('department_id',$request->department_id)->get();
+        $already_target_group_ids = array();
+
+        //操作対象になっているグループのIDを配列に格納する
+        foreach($already_target_groups as $already_target_group){
+            array_push($already_target_group_ids,$already_target_group['group_id']);
+        }
+        if($group_ids == null) {
+            //チェックが一つもついていない場合
+            DB::beginTransaction();
+            try {
+                //全ての倉庫を操作対象から外す
+                Target::where('department_id', $request->department_id)->delete();
+                DB::commit();
+            } catch (\Exception $e) {
+                //エラー時
+                DB::rollBack();
+                return redirect('/department')->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
+            }
+            return redirect('/department')->with(MessageDef::SUCCESS, MessageDef::SUCCESS_TARGET);
+        }else{
+            //一つでもチェックが入っている場合
+            foreach( $already_target_group_ids as $already_target_group_id){
+                DB::beginTransaction();
+                $chk = in_array($already_target_group_id, $group_ids,true);
+                if($chk == false){
+                    try{//「操作対象 => 操作対象から外す」処理
+                        Target::where('group_id', $already_target_group_id)->where('department_id',$request->department_id)->delete();
+                        DB::commit();
+                    }catch(\Exception $e){
+                        //エラー時処理
+                        DB::rollBack();
+                        return redirect('/department')->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
+                    }
+                }
+            }
+        }
+        //グループを操作対象にする処理
+        foreach($group_ids as $group_id) {
+            DB::beginTransaction();
+            $already_target = Target::where('department_id',$request->department_id)->where('group_id',$group_id)->first();
+            if($already_target == null) {
+                //既に登録されている場合は登録処理を行わない
+                try {
+                    $already_target = new Target;
+                    $already_target->department_id = $request->department_id;
+                    $already_target->group_id = $group_id;
+                    $already_target->save();
+                    DB::commit();
+                }catch(\Exception $e) {
+                    //エラー時処理
+                    DB::rollBack();
+                    return redirect('/department')->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
+                }
+            }
+        }
+        return redirect('/department')->with(MessageDef::SUCCESS,MessageDef::SUCCESS_TARGET);
     }
 }
+

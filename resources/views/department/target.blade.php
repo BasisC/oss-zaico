@@ -13,12 +13,12 @@
             <div class="col-md-10 ">
                 <div class="panel panel-default">
                     <div class="col-md-6 ">
-                        <h3>部署所属画面</h3>
+                        <h3>操作対象画面</h3>
                     </div>
                     <br>
                     <br>
                     <hr>
-                    <form class="form-horizontal" method="POST" action="/department/detail/{id}/belong">
+                    <form class="form-horizontal" method="POST" action="/department/target_list/{id}/target">
                         {{ csrf_field() }}
 
                         <div class="form-group{{ $errors->has('department_name') ? ' has-error' : '' }}">
@@ -30,7 +30,7 @@
                             </div>
                         </div>
                         <div class="form-group{{ $errors->has('warehouse_name') ? ' has-error' : '' }}">
-                            <label for="belong_user" class="col-md-3 control-label">所属ユーザ：</label>
+                            <label for="belong_user" class="col-md-3 control-label">操作対象グループ：</label>
                             <div class="form-group">
                                 <div >
                                     <input type = "hidden" name="department_id" value ="{{$department->id}}">
@@ -44,26 +44,19 @@
                                                 </tr>
                                                 </thead>
                                                 <tbody>
-                                                @foreach($users as $user)
+                                                @foreach($groups as $group)
                                                     <tr>
-                                                        <td><input type="checkbox" name="user_id[]"  value="{{ $user->id }}" @if(in_array($user->id, $belong_ids,true))checked @endif> : {{$user->name}} </td>
+                                                        <td><input type="checkbox" name="group_id[]"  value="{{ $group->id }}"
+                                                                   @if(in_array($group->id, $target_groups,true))checked @endif> : {{$group->group_name}} </td>
                                                     </tr>
                                                 @endforeach
                                             </table>
                                         </div>
-
-
-
-
                                     </div>
-
-
-
-
                         <div class="form-group">
                             <div class="col-md-6 col-md-offset-4">
                                 <button type="submit" class="btn btn-primary"value="send">
-                                    所属させる>>
+                                    操作対象にする>>
                                 </button>
                             </div>
                         </div>
@@ -72,5 +65,4 @@
             </div>
         </div>
     </div>
-
 @endsection

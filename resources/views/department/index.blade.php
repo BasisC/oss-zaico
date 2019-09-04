@@ -43,14 +43,24 @@
                             <th><a href="/department?sort=id">#</a></th>
                             <th><a href="/department?sort=department_name">部署名</a></th>
 
-                            <th>操作</th>
+
                         </tr>
                         </thead>
                         <tbody>
                         @foreach ($items as $item)
                             <tr>
                                 <td>{{$item->id}}</td>
-                                <td><a href="/department/detail/{{$item->id}}" >{{$item->department_name}}</a></td>
+                                <td>
+                                    {{$item->department_name}}　
+                                   <!--! <a href="/department/detail/{{$item->id}}">ユーザを所属させる </a>/
+                                    <a href="/department/warehouse_detail/{{$item->id}}">倉庫を操作対象にする </a>-->
+                                </td>
+                                <td>
+                                    <a href="/department/detail/{{$item->id}}" class="btn btn-primary btn-sm">ユーザ所属</a>
+                                </td>
+                                <td>
+                                    <a href="/department/target_list/{{$item->id}}" class="btn btn-primary btn-sm">操作対象</a>
+                                </td>
                                 <td>
                                     <a href="/department/edit/{{$item->id}}" class="btn btn-primary btn-sm">編集</a>
                                 </td>

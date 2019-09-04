@@ -9,9 +9,9 @@ class Warehouse extends Model
     protected $guarded = array('id');
 
     public static $create_rules = array(
-        'warehouse_name' => 'required | unique:warehouses',
-        'address' => 'required | unique:warehouses',
-        'tel_number' => 'required | unique:warehouses'
+        'warehouse_name' => 'required | max:191 | unique:warehouses',
+        'address' => 'required | max:191 |unique:warehouses',
+        'tel_number' => 'required | digits_between:1,191 | max:191 | unique:warehouses'
     );
 
     public static $edit_rules = array(

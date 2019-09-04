@@ -28,6 +28,7 @@ class MessageDef
     const ERROR_PERMISSION = "本ユーザの役割ではアクセスできません";
     const ERROR_UNEXPECT = "予期できないエラーです";
     const ERROR_NOT_GET_DB = "データを取得できませんでした";
+    const ERROR_NOT_PARAMETER = "この項目でソートはできません";
 
 
     //警告
@@ -47,4 +48,8 @@ class MessageDef
     const SUCCESS_EDIT_USER = "ユーザを編集しました";
     const SUCCESS_DELETE_USER = "ユーザを削除しました";
     const SUCCESS_BELONG_DEPARTMENT = "部署に所属しました";
+    const SUCCESS_DELETE_DEPARTMENT = "部署を削除しました";
+    const SUCCESS_EDIT_DEPARTMENT = "部署を編集しました";
+    const SUCCESS_TARGET = "操作対象しました";
+
 }

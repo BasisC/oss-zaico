@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\MessageDef;
+use App\SystemDef;
 use Illuminate\Http\Request;
 use App\User;
 use Illuminate\Support\Facades\DB;
@@ -24,8 +25,8 @@ class UserController extends Controller
        //変数宣言
        $sort = $request->sort;
        //検索項目のデータを決定する
-       $name = $this->getValue($request,'name',$sort,'find_name');
-       $email = $this->getValue($request,'email',$sort,'find_email');
+       $name = $this->getSessionValue($request,'name',$sort,'find_name');
+       $email = $this->getSessionValue($request,'email',$sort,'find_email');
        //ソートの項目が選択されていない場合、IDが選択される
        if($sort == null){
            $sort = 'id';
@@ -37,50 +38,14 @@ class UserController extends Controller
                //検索項目の条件にあうものを出力する。
                ->where('name','like',"%".$name."%")
                ->where('email','like',"%".$email."%")
-               ->paginate(5);
+               ->paginate(SystemDef::PAGE_NUMBER);
        }catch(\Exception $e){
            //エラー時。ホーム画面に移動しエラー出力
-           return redirect('/home')->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
+           return redirect('/user')->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
        }
        //値をセットし渡す
        $param = ['items'=>$items,'sort'=>$sort,'name'=>$name,'email'=>$email];
        return view('user.index',$param);
-   }
-
-    /**
-     * 検索機能で使用する。
-     * 検索時に必要な値をセッション等から探して値を決定する
-     *
-     * ①検索条件が指定されていない&&ソートが選択されていない
-     *   =>セッションに保存した値を削除し、ワイルドカードを返す
-     * ②検索条件が指定されていない&&ソートが選択されている
-     *   =>セッションに保存した値を返す。
-     * ③検索条件が指定されている場合
-     * 　=>セッションに値を保存。検索を行う
-     *
-     * @param Request $request => フォームから送られた値
-     * @param $caram => フォームからの値の中から必要なデータ名
-     * @param $sort => indexにて最初に定義している値。
-     * @param $key => session内でデータを操作する際に必要
-     * @return mixed|string => 出力した値を元に検索を行い、結果を表示する。
-     */
-   protected function getValue(Request $request,$caram,$sort,$key){
-       if($request->$caram == null){//検索条件が指定されていない時
-           if($sort == null){
-               //セッションに保存された値を削除し、ワイルドカードを返す
-               $request->session()->forget($key);
-               return "%";
-           }else{
-               //セッションに保存した値を返す。失敗した場合は、ワイルドカードを返す
-               return $value = $request->session()->get($key,"%");
-           }
-
-       }else{//検索条件が指定さてている時
-           //セッションに検索条件を保存
-           $request->session()->put($key,$request->$caram);
-           return $request->$caram;
-       }
-
    }
 
     /**
@@ -114,7 +79,7 @@ class UserController extends Controller
        $userName = $user->name;
        $userEmail = $user->email;
        //バリデーション
-       $this->validate($request,self::rules($userName,$userEmail));
+       $this->validate($request,$this->rules($userName,$userEmail));
        //編集の対象になるユーザの情報を取得
        $user = User::find($request->id);
        DB::beginTransaction();
@@ -126,12 +91,12 @@ class UserController extends Controller
            }
            $user->name = $request->name;
            $user->email = $request->email;
-           $user->per_department_create = $request->per_department_create == 1 ? 1: 0;
-           $user->per_department_update= $request->per_department_update == 1 ? 1: 0;
-           $user->per_department_delete = $request->per_department_delete == 1 ? 1: 0;
-           $user->per_group_create = $request->per_group_create == 1 ? 1: 0;
-           $user->per_group_update = $request->per_group_update == 1 ? 1: 0;
-           $user->per_group_delete = $request->per_group_delete == 1 ? 1: 0;
+           $user->per_department_create = $request->per_department_create == SystemDef::OWN_PERMISSION ? SystemDef::OWN_PERMISSION: SystemDef::NO_PERMISSION;
+           $user->per_department_update= $request->per_department_update == SystemDef::OWN_PERMISSION ? SystemDef::OWN_PERMISSION: SystemDef::NO_PERMISSION;
+           $user->per_department_delete = $request->per_department_delete == SystemDef::OWN_PERMISSION ? SystemDef::OWN_PERMISSION: SystemDef::NO_PERMISSION;
+           $user->per_group_create = $request->per_group_create == SystemDef::OWN_PERMISSION ? SystemDef::OWN_PERMISSION: SystemDef::NO_PERMISSION;
+           $user->per_group_update = $request->per_group_update == SystemDef::OWN_PERMISSION ? SystemDef::OWN_PERMISSION: SystemDef::NO_PERMISSION;
+           $user->per_group_delete = $request->per_group_delete == SystemDef::OWN_PERMISSION ? SystemDef::OWN_PERMISSION: SystemDef::NO_PERMISSION;
            $user->save();
            DB::commit();
            return redirect("/user")->with(MessageDef::SUCCESS,MessageDef::SUCCESS_EDIT_USER);
@@ -181,9 +146,9 @@ class UserController extends Controller
    public function delete(Request $request){
 
        $user = User::find($request->id);
-       //削除倉庫を取得できなかった場合の処理
+       //削除ユーザを取得できなかった場合の処理
        if($user == null){
-           return redirect('/home')->with(MessageDef::ERROR, MessageDef::ERROR_OLD_DELETE);
+           return redirect('/user')->with(MessageDef::ERROR, MessageDef::ERROR_OLD_DELETE);
        }
        //データベースの登録処理開始
        DB::beginTransaction();

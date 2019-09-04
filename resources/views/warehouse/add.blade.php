@@ -49,11 +49,11 @@
                             </div>
                         </div>
 
-                        <div class="form-group{{ $errors->has('tel-number') ? ' has-error' : '' }}">
-                            <label for="password" class="col-md-4 control-label">Tel_number</label>
+                        <div class="form-group{{ $errors->has('tel_number') ? ' has-error' : '' }}">
+                            <label for="tel_number" class="col-md-4 control-label">tel_number</label>
 
                             <div class="col-md-6">
-                                <input id="tel_number" type="text" class="form-control" name="tel_number" required>
+                                <input id="tel_number" type="number" class="form-control" name="tel_number" value="{{ old('tel_number') }}" required>
 
                                 @if ($errors->has('tel_number'))
                                     <span class="help-block">

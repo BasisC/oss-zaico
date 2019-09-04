@@ -48,10 +48,16 @@ Route::group(['middleware' => 'auth'], function() {
     //部署管理
     Route::get('/department','DepartmentController@index');
     Route::get('/department/detail/{id}','DepartmentController@detail');
+    Route::post('/department/detail/{id}','DepartmentController@detail');
     Route::get('/department/detail/{id}/belong','DepartmentController@belong');
     Route::post('/department/detail/{id}/belong','DepartmentController@belonging');
     Route::get('/department/add','DepartmentController@add');
     Route::post('/department/add','DepartmentController@create');
     Route::get('/department/edit/{id}','DepartmentController@edit');
+    Route::post('/department/edit/{id}','DepartmentController@update');
+    Route::post('/department/delete/{id}','DepartmentController@delete');
+    Route::get('/department/target_list/{id}','DepartmentController@targetList');
+    Route::get('/department/target_list/{id}/target','DepartmentController@target');
+    Route::post('/department/target_list/{id}/target','DepartmentController@targeting');
 
 });
