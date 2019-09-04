@@ -96,7 +96,7 @@ class WarehouseController extends Controller
     public function update(Request $request){
         //ログインしていないまたは権限を持っていないユーザをアクセスさせない
         $edit_warehouse_id = $request->id;
-        $this->validate($request,Warehouse::$edit_rules);
+        $this->validate($request,$this->edit_rules($request->warehouse_name,$request->address,$request->tel_number));
         //編集する倉庫を表示する
         $warehouse = Warehouse::find( $edit_warehouse_id);
         $form = $request->all();
@@ -158,14 +158,24 @@ class WarehouseController extends Controller
         }
     }
 
-    protected function edit_rules($department_name )
+    protected function edit_rules($warehouse_name ,$address,$tel_number)
     {
         return [
-            'department_name' => [
-                Rule::unique('departments', 'department_name')->whereNot('department_name', $department_name),
+            'warehouse_name' => [
+                Rule::unique('warehouses', 'warehouse_name')->whereNot('warehouse_name', $warehouse_name),
                 'required',
                 'string',
                 'max:191'
+            ],
+            'address' => [
+                Rule::unique('warehouses','address')->whereNot('address',$address),
+                'required',
+                'max:191',
+            ],
+            'tel_number' =>[
+                Rule::unique('warehouses','tel_number')->whereNot('tel_number',$tel_number),
+                'digits_between:1,191',
+                'required',
             ]
         ];
     }
