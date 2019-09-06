@@ -32,8 +32,8 @@
                         <table class="table table-striped table-sm">
                             <thead>
                             <tr>
-                                <th><a href="/group?sort=id">#</a></th>
-                                <th><a href="/group?sort=group_name">グループ名</a></th>
+                                <th><a href="/group/detail/{{$group->id}}?sort=warehouse_id">#</a></th>
+                                <th><a href="/group/detail/{{$group->id}}?sort=warehouse_name">グループ名</a></th>
                             </tr>
                             </thead>
                             <tbody>

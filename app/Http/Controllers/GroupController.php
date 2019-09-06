@@ -30,7 +30,11 @@ class GroupController extends Controller
             $sort = 'id';
         }
         //倉庫の情報を取得。ぺジネーションして表示する
-        $items = Group::orderBy($sort,'asc') ->paginate(5);
+        try {
+            $items = Group::orderBy($sort, 'asc')->paginate(5);
+        }catch(\Exception $e){
+            return redirect ('/group')->with(MessageDef::ERROR, MessageDef:: ERROR_UNEXPECT );
+        }
         $param = ['items'=>$items ,'sort' => $sort];
         return view('group.index',$param);
     }
@@ -50,7 +54,7 @@ class GroupController extends Controller
             $group -> user_id = $user_id;
             $group->save();
             DB::commit();
-            return redirect('/group')->with(MessageDef::SUCCESS, MessageDef::SUCCESS_CREATE_WAREHOUSE);
+            return redirect('/group')->with(MessageDef::SUCCESS, MessageDef::SUCCESS_CREATE_GROUP);
         }catch (\Exception  $e) {
             //エラー時
             DB::rollBack();
@@ -64,28 +68,20 @@ class GroupController extends Controller
      */
     public function detail(Request $request){
         //変数宣言
-        $belong_warehouses = array();
-        $i = 0;
+        $group = Group::find($request->id);
         //ログインしていないまたは権限を持っていないユーザをアクセスさせない
         /*後で実装すること*/
-
-       //ソート初期値設定
-        $sort = $request->sort;
-        if($sort == null){
-            $sort ='id';
-        }
-        //グループを取得
-        $group = Group::find($request->id);
         if($group == null){
-            return redirect('/group')->with(MessageDef::ERROR, MessageDef::ERROR_NON_ID);
+            return redirect('/department')->with(MessageDef::ERROR,MessageDef::ERROR_NON_ID);
         }
-        //グループに所属している倉庫を取得する
-        $belongs = BelongGroup::where('group_id',$request->id)->get();
-        foreach($belongs as $belong){
-            $ids = $belongs[$i]['warehouse_id'];
-            $belong_warehouse = Warehouse::find($ids);
-            array_push($belong_warehouses,$belong_warehouse);
-            $i += 1;
+        $sort =  $this->setValue($request,'sort','warehouse_id');
+        try{
+            $belong_warehouses = DB::table('warehouses')->join('belong_groups','warehouses.id','=','belong_groups.warehouse_id')
+                ->where('group_id',$request->id)
+                ->orderBy($sort,'asc')
+                ->paginate(SystemDef::PAGE_NUMBER);
+        }catch(\Exception $e){
+            return redirect("/group/detail/".$request->id)->with(MessageDef::ERROR,MessageDef::ERROR_UNEXPECT);
         }
         $param = ['group'=>$group,'belong_warehouses'=>$belong_warehouses];
         //倉庫編集画面を開く

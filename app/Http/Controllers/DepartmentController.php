@@ -27,7 +27,11 @@ class DepartmentController extends Controller
         //ソートする項目が選択されていなければ、IDで昇順に並べる
         $sort = $this->setValue($request,'sort','id');
         //ぺジネーション設定してデータを取得
-        $items = Department::orderBy($sort,'asc')->paginate(SystemDef::PAGE_NUMBER);
+        try {
+            $items = Department::orderBy($sort, 'asc')->paginate(SystemDef::PAGE_NUMBER);
+        }catch(\Exception $e){
+            return redirect ('/department')->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
+        }
         $param = ['items'=>$items,'sort'=>$sort];
         return view ('department.index',$param);
     }
@@ -61,7 +65,7 @@ class DepartmentController extends Controller
             $department->user_id = $user_id;
             $department->save();
             DB::commit();
-            return redirect('/department')->with(MessageDef::SUCCESS, MessageDef::SUCCESS_CREATE_WAREHOUSE);
+            return redirect('/department')->with(MessageDef::SUCCESS, MessageDef::SUCCESS_CREATE_DEPARTMENT);
         }catch (\Exception  $e) {
             //エラー時
             DB::rollBack();

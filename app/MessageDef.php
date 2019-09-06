@@ -34,23 +34,28 @@ class MessageDef
     //警告
 
     //正常
-    const SUCCESS_ENTRY_USER = "ユーザを追加しました";
+    //ユーザ管理
+    const SUCCESS_ENTRY_USER = "ユーザを登録しました";
     const SUCCESS_UPDATE_USER = "ユーザを編集しました";
-    const SUCCESS_ENTRY_COMPANY = "会社を追加しました";
-    const SUCCESS_UPDATE_COMPANY = "会社を編集しました";
-    const SUCCESS_DELETE_COMPANY = "会社を削除しました";
-    const SUCCESS_NO_DELETE_COMPANY = "会社削除をキャンセルしました";
-    const SUCCESS_CREATE_WAREHOUSE = "倉庫を登録しました";
-    const SUCCESS_EDIT_WAREHOUSE = "倉庫を編集しました";
-    const SUCCESS_DELETE_WAREHOUSE = "倉庫を削除しました";
-    const SUCCESS_BELONG_WAREHOUSE = "グループ所属を変更しました";
-    const SUCCESS_EDIT_GROUP = "グループを編集しました";
-    const SUCCESS_DELETE_GROUP = "グループを削除しました";
     const SUCCESS_EDIT_USER = "ユーザを編集しました";
     const SUCCESS_DELETE_USER = "ユーザを削除しました";
+    //部署管理
+    const SUCCESS_CREATE_DEPARTMENT = "部署を登録しました";
     const SUCCESS_BELONG_DEPARTMENT = "部署に所属しました";
     const SUCCESS_DELETE_DEPARTMENT = "部署を削除しました";
     const SUCCESS_EDIT_DEPARTMENT = "部署を編集しました";
     const SUCCESS_TARGET = "操作対象しました";
+    //倉庫管理
+    const SUCCESS_CREATE_WAREHOUSE = "倉庫を登録しました";
+    const SUCCESS_EDIT_WAREHOUSE = "倉庫を編集しました";
+    const SUCCESS_DELETE_WAREHOUSE = "倉庫を削除しました";
+    //グループ管理
+    const SUCCESS_CREATE_GROUP = "グループを登録しました";
+    const SUCCESS_BELONG_WAREHOUSE = "グループ所属を変更しました";
+    const SUCCESS_EDIT_GROUP = "グループを編集しました";
+    const SUCCESS_DELETE_GROUP = "グループを削除しました";
+
+
+
 
 }
