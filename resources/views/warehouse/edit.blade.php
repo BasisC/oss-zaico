@@ -54,7 +54,7 @@
                         <label for="tel_number" class="col-md-4 control-label">tel_number</label>
 
                         <div class="col-md-6">
-                            <input id="tel_number" type="number" class="form-control" name="tel_number" value="{{ old('tel_number') }}" required>
+                            <input id="tel_number" type="number" class="form-control" name="tel_number" value="{{ $form->tel_number }}" required>
 
                             @if ($errors->has('tel_number'))
                                 <span class="help-block">
@@ -63,6 +63,7 @@
                             @endif
                         </div>
                     </div>
+
 
                     <div class="form-group">
                         <div class="col-md-6 col-md-offset-4">
@@ -76,5 +77,4 @@
         </div>
     </div>
 </div>
-
 @endsection

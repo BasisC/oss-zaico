@@ -96,7 +96,8 @@ class WarehouseController extends Controller
     public function update(Request $request){
         //ログインしていないまたは権限を持っていないユーザをアクセスさせない
         $edit_warehouse_id = $request->id;
-        $this->validate($request,$this->edit_rules($request->warehouse_name,$request->address,$request->tel_number));
+        $this->validate($request,$this->edit_rules($request -> warehouse_name,$request -> address, $request -> tel_number));
+
         //編集する倉庫を表示する
         $warehouse = Warehouse::find( $edit_warehouse_id);
         $form = $request->all();
@@ -179,4 +180,10 @@ class WarehouseController extends Controller
             ]
         ];
     }
+
+    public function return(Request $request){
+        return redirect('/warehouse')->with(MessageDef::ERROR, MessageDef::ERROR_DELETE);
+    }
+
+
 }

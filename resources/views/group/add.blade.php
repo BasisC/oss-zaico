@@ -13,55 +13,28 @@
             <div class="col-md-10 ">
                 <div class="panel panel-default">
                     <div class="col-md-6 ">
-                        <h3>倉庫登録画面</h3>
+                        <h3>グループ登録画面</h3>
                     </div>
                     <br>
                     <br>
                     <hr>
-                    <form class="form-horizontal" method="POST" action="/warehouse/add">
+                    <form class="form-horizontal" method="POST" action="/group/add">
                         {{ csrf_field() }}
 
-                        <div class="form-group{{ $errors->has('warehouse_name') ? ' has-error' : '' }}">
-                            <label for="warehouse_name" class="col-md-4 control-label">Warehouse_name</label>
+                        <div class="form-group{{ $errors->has('group_name') ? ' has-error' : '' }}">
+                            <label for="group_name" class="col-md-4 control-label">group_name</label>
 
                             <div class="col-md-6">
-                                <input id="warehouse_name" type="text" class="form-control" name="warehouse_name" value="{{ old('warehouse_name') }}" required autofocus>
+                                <input id="group_name" type="text" class="form-control" name="group_name" value="{{ old('group_name') }}" required autofocus>
 
-                                @if ($errors->has('warehouse_name'))
+                                @if ($errors->has('group_name'))
                                     <span class="help-block">
-                                        <strong>{{ $errors->first('warehouse_name') }}</strong>
+                                        <strong>{{ $errors->first('group_name') }}</strong>
                                     </span>
                                 @endif
                             </div>
                         </div>
 
-                        <div class="form-group{{ $errors->has('address') ? ' has-error' : '' }}">
-                            <label for="address" class="col-md-4 control-label">Address</label>
-
-                            <div class="col-md-6">
-                                <input id="address" type="text" class="form-control" name="address" value="{{ old('address') }}" required>
-
-                                @if ($errors->has('address'))
-                                    <span class="help-block">
-                                        <strong>{{ $errors->first('address') }}</strong>
-                                    </span>
-                                @endif
-                            </div>
-                        </div>
-
-                        <div class="form-group{{ $errors->has('tel-number') ? ' has-error' : '' }}">
-                            <label for="password" class="col-md-4 control-label">Tel_number</label>
-
-                            <div class="col-md-6">
-                                <input id="tel_number" type="text" class="form-control" name="tel_number" required>
-
-                                @if ($errors->has('tel_number'))
-                                    <span class="help-block">
-                                        <strong>{{ $errors->first('tel_number') }}</strong>
-                                    </span>
-                                @endif
-                            </div>
-                        </div>
 
                         <div class="form-group">
                             <div class="col-md-6 col-md-offset-4">

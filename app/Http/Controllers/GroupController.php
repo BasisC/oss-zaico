@@ -10,6 +10,7 @@ use App\BelongGroup;
 use App\Warehouse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class GroupController extends Controller
 {
@@ -35,11 +36,26 @@ class GroupController extends Controller
     }
 
     public function add(Request $request){
-
+        return view('group.add');
     }
 
     public function create(Request $request){
-
+        $user_id = auth::user()->id;
+        $this->validate($request, Group::$create_rules);
+        $group = new Group;
+        //DBに書き込む処理を開始
+        DB::beginTransaction();
+        try {
+            $group -> group_name = $request ->group_name;
+            $group -> user_id = $user_id;
+            $group->save();
+            DB::commit();
+            return redirect('/group')->with(MessageDef::SUCCESS, MessageDef::SUCCESS_CREATE_WAREHOUSE);
+        }catch (\Exception  $e) {
+            //エラー時
+            DB::rollBack();
+            return redirect('/group/add')->with(MessageDef::ERROR, MessageDef:: ERROR_CREATE );
+        }
     }
 
     /**
@@ -77,10 +93,7 @@ class GroupController extends Controller
     }
 
     public function belong(Request $request){
-        $i  = 0;
         $belongs = array();
-        //アクセスできるユーザを認証する
-
         //グループのステータスを取得する
         $groups = Group::find($request->id);
         //倉庫の情報を取得する
@@ -96,67 +109,73 @@ class GroupController extends Controller
     }
 
     public function belonging(Request $request){
-        //変数宣言
-        //やりたいことはbelong_warehouseテーブルに登録すること！
-       $i = 0;
-       $belong_group = new BelongGroup;
-       $chk = 0;
-       $belongs = [];
-       DB::beginTransaction();
-       $del_belongs = BelongGroup::where('group_id',$request->group_id)->get();
-        foreach($del_belongs as $del_belong){
-            array_push($belongs,$del_belong['warehouse_id']);
-        }
-       //チェックボックスにチェックされている倉庫をグループのDBに所属させる時の処理
-       foreach($request->warehouse_id as $warehouse_id ){
-           $belonged = BelongGroup::where('group_id',$request->group_id)->where("warehouse_id",$warehouse_id)->first();
-           if($belonged == null){
-               try{
-                   $belong_group -> warehouse_id = $warehouse_id;
-                   $belong_group -> group_id = $request->group_id;
-                   $belong_group->save();
-                   DB::commit();
-                   $chk += 1;
-               }catch(\Exception  $e){
-                   return redirect('/home')->with(MessageDef::ERROR, "予想外すぎるエラー");
-                   DB::rollBack();
-               }
-           }else{
 
-           }
-       }
-       $cnt = "失敗";
-       /*
-        * $request->warehouse_id ====フォームから送られてきた倉庫ID
-        * $belongs====所属している倉庫のID
-        * チェック外したら削除する処理はまだ実装していない。
-        *
-        * [やりたいこと]
-        * ①$belongsと$request->warehouse_idを比較する
-        * ②$belongsのみにあるIDのレコードを削除する
-        * ③共通する項目は無視する。
-       */
-       //return redirect('/group')->with(MessageDef::SUCCESS, MessageDef::SUCCESS_BELONG_WAREHOUSE);
-        $flg = 0;
-        $count = count($del_belongs);
-        for($i = 0;$i<$count;$i++){
-            $result = array_search($del_belongs[$i]['warehouse_id'],$request->warehouse_id);
-            if($result == false){
-               $del =BelongGroup::where('warehouse_id',$del_belongs[$i]['warehouse_id']);
-               $result = $del->delete();
-                $flg += 100;
-            }else{
-                $flg += 1;
+        /*user_id => 所属画面のチェックボックスにチェックされたユーザID
+         *already_belong_users => 部署に所属しているユーザのデータ
+         * already_belong_user_ids => 部署に所属しているユーザのID
+         */
+        $warehouse_ids = $request->warehouse_id;
+        $already_belong_groups = BelongGroup::where('group_id',$request->group_id)->get();
+        $already_belong_warehouse_ids = array();
+        //部署に所属しているユーザのIDを配列に格納する
+        foreach($already_belong_groups as $already_belong_group){
+            array_push($already_belong_warehouse_ids,$already_belong_group['warehouse_id']);
+        }
+        //チェックが一つもついていないときの処理
+        if($warehouse_ids == null) {
+            DB::beginTransaction();
+            try {//チェックが一つもついていない場合の処理。選択された部署に所属しているユーザの所属を解除する
+                BelongGroup::where('group_id', $request->group_id)->delete();
+                DB::commit();
+            } catch (\Exception $e) {
+                //エラー時
+                DB::rollBack();
+                return redirect('/gourp')->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
+            }
+            return redirect('/group')->with(MessageDef::SUCCESS,MessageDef::SUCCESS_BELONG_DEPARTMENT);
+        }else {
+            //チェックが一つ以上ついているときの処理
+            DB::beginTransaction();
+            foreach ($already_belong_warehouse_ids as $already_belong_warehouse_id) {
+                $chk = in_array($already_belong_warehouse_id, $warehouse_ids, true);
+              //  try {
+                    if ($chk == false) {
+                        BelongGroup::where('warehouse_id', $already_belong_warehouse_id)->where('group_id', $request->group_id)->delete();
+                    }
+               // } catch (\Exception $e) {
+                    //エラー時
+                //    DB::rollBack();
+                 //   return redirect('/department')->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
+                //}
             }
         }
-       // return redirect('/group')->with(MessageDef::SUCCESS, $request->warehouse_id[1]);
-        return redirect('/group')->with(MessageDef::SUCCESS,$flg);
+        //チェックボックスにチェックがついている倉庫をグループに所属させる処理
+        foreach($warehouse_ids as $warehouse_id ) {
+            $already_belong = BelongGroup::where('group_id', $request->group_id)->where('warehouse_id', $warehouse_id)->first();
+            if ($already_belong == null) {
+                try {
+                    $belong_warehouse = new BelongGroup;
+                    $belong_warehouse->warehouse_id = $warehouse_id;
+                    $belong_warehouse->group_id = $request->group_id;
+                    $belong_warehouse->save();
+                }catch (\Exception $e) {
+                    //エラー時
+                    DB::rollBack();
+                    return redirect('/group')->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
+                }
+            }
+        }
+        DB::commit();
+        return redirect('/group')->with(MessageDef::SUCCESS,MessageDef::SUCCESS_BELONG_DEPARTMENT);
     }
 
+
+
     public function edit(Request $request){
-        /*if($warehouse == null){
-            return redirect('/warehouse')->with(MessageDef::ERROR, MessageDef::ERROR_NON_ID);
-        }*/
+        $group = Group::find($request->id);
+        if($group == null){
+            return redirect('/group')->with(MessageDef::ERROR, MessageDef::ERROR_NON_ID);
+        }
         //倉庫編集画面を開く
         $group = Group::find($request->id);
         return view('group.edit',['form'=>$group]);
@@ -165,6 +184,8 @@ class GroupController extends Controller
     public function update(Request $request){
         //グループ編集画面から保存する処理
         $group = Group::find($request->id);
+        $group_name = $request -> group_name;
+        $this->validate($request,$this->edit_rules($group_name));
         $id = $request->id;
         $form = $request->all();
         unset($form['_token']);
@@ -180,22 +201,45 @@ class GroupController extends Controller
         }
     }
 
-
-
+    protected function edit_rules($group_name)
+    {
+        return [
+            'group_name' => [
+                Rule::unique('groups', 'group_name')->whereNot('group_name', $group_name),
+                'required',
+                'string',
+                'max:191'
+            ]
+        ];
+    }
 
     /**
-     * @param $login_chk => ログインしているユーザか否か（null or notnull）
-     * @param $auth_user => ログインしているユーザのステータス
-     * @return string => エラー時、判定を出力する。
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
      */
-    public function user_chk($login_chk,$auth_user){
-        if($login_chk == null){
-            //return redirect ('/home')->with(MessageDef::ERROR, MessageDef::ERROR_PERMISSION);
-            return 'permission';
+    public function delete(Request $request){
+
+        $group = Group::find($request->id);
+        //削除ユーザを取得できなかった場合の処理
+        if($group == null){
+            return redirect('/group')->with(MessageDef::ERROR, MessageDef::ERROR_OLD_DELETE);
         }
-        if($auth_user->type == SystemDef::EMPLOYEE) {
-            //return redirect('/home')->with(MessageDef::ERROR, MessageDef:: ERROR_TYPE);
-            return 'employee';
+        //データベースの登録処理開始
+        DB::beginTransaction();
+        try{
+            $group->delete();
+            DB::commit();
+            return redirect('/group')->with(MessageDef::SUCCESS, MessageDef::SUCCESS_DELETE_GROUP);
+        }catch(\Exception $e) {
+            //エラー時
+            info($e->getMessage());
+            DB::rollBack();
+            return redirect('/group')->with(MessageDef::ERROR, MessageDef::ERROR_DELETE);
         }
+    }
+
+    public function return(Request $request){
+        return redirect('/group')->with(MessageDef::ERROR, MessageDef::ERROR_DELETE);
     }
 }

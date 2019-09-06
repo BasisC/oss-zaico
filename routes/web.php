@@ -27,6 +27,7 @@ Route::group(['middleware' => 'auth'], function() {
     Route::post('warehouse/add','WarehouseController@create');
     Route::get('/warehouse/edit/{id}','WarehouseController@edit');
     Route::post('/warehouse/edit/{id}','WarehouseController@update');
+    Route::get('/warehouse/delete/{id}','GroupController@return');
     Route::post('/warehouse/delete/{id}/', 'WarehouseController@delete');
 
     //グループ管理
@@ -36,6 +37,10 @@ Route::group(['middleware' => 'auth'], function() {
     Route::post('/group/detail/{id}/belong','GroupController@belonging');
     Route::get('/group/edit/{id}','GroupController@edit');
     Route::post('/group/edit/{id}','GroupController@update');
+    Route::get('/group/add','GroupController@add');
+    Route::post('/group/add','GroupController@create');
+    Route::get('/group/delete/{id}','GroupController@return');
+    Route::post('/group/delete/{id}','GroupController@delete');
 
     //ユーザ管理
     Route::get('/user','UserController@index');
@@ -43,7 +48,7 @@ Route::group(['middleware' => 'auth'], function() {
     Route::get('/user/edit/{id}','UserController@edit');
     Route::post('/user/edit/{id}','UserController@update');
     Route::post('/user/delete/{id}','UserController@delete');
-    Route::get('/user/delete/{id}','UserController@delete');
+    Route::get('/user/delete/{id}','UserController@return');
 
     //部署管理
     Route::get('/department','DepartmentController@index');
@@ -55,6 +60,7 @@ Route::group(['middleware' => 'auth'], function() {
     Route::post('/department/add','DepartmentController@create');
     Route::get('/department/edit/{id}','DepartmentController@edit');
     Route::post('/department/edit/{id}','DepartmentController@update');
+    Route::get('/department/delete/{id}','DepartmentController@return');
     Route::post('/department/delete/{id}','DepartmentController@delete');
     Route::get('/department/target_list/{id}','DepartmentController@targetList');
     Route::get('/department/target_list/{id}/target','DepartmentController@target');

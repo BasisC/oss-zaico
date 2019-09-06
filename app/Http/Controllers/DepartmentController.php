@@ -181,13 +181,12 @@ class DepartmentController extends Controller
             return redirect('/department')->with(MessageDef::SUCCESS,MessageDef::SUCCESS_BELONG_DEPARTMENT);
         }else{
             //チェックがついていないユーザのみ削除する
+            DB::beginTransaction();
             foreach( $already_belong_user_ids as $already_belong_user_id){
-                DB::beginTransaction();
                 $chk = in_array($already_belong_user_id, $user_ids,true);
                try {
                    if ($chk == false) {
                        BelongDepartment::where('user_id', $already_belong_user_id)->where('department_id', $request->department_id)->delete();
-                       DB::commit();
                    }
                }catch (\Exception $e) {
                    //エラー時
@@ -200,14 +199,12 @@ class DepartmentController extends Controller
         //チェックがついているユーザの所属処理
         foreach($user_ids as $user_id) {
             $already_belong = BelongDepartment::where('department_id', $request->department_id)->where('user_id', $user_id)->first();
-            DB::beginTransaction();
             if ($already_belong == null) {
                 try {
                     $belong_user = new BelongDepartment;
                     $belong_user->department_id = $request->department_id;
                     $belong_user->user_id = $user_id;
                     $belong_user->save();
-                    DB::commit();
                 }catch (\Exception $e) {
                     //エラー時
                     DB::rollBack();
@@ -215,6 +212,7 @@ class DepartmentController extends Controller
                 }
             }
         }
+        DB::commit();
         return redirect('/department')->with(MessageDef::SUCCESS,MessageDef::SUCCESS_BELONG_DEPARTMENT);
     }
 
@@ -439,13 +437,12 @@ class DepartmentController extends Controller
             return redirect('/department')->with(MessageDef::SUCCESS, MessageDef::SUCCESS_TARGET);
         }else{
             //一つでもチェックが入っている場合
+            DB::beginTransaction();
             foreach( $already_target_group_ids as $already_target_group_id){
-                DB::beginTransaction();
                 $chk = in_array($already_target_group_id, $group_ids,true);
                 if($chk == false){
                     try{//「操作対象 => 操作対象から外す」処理
                         Target::where('group_id', $already_target_group_id)->where('department_id',$request->department_id)->delete();
-                        DB::commit();
                     }catch(\Exception $e){
                         //エラー時処理
                         DB::rollBack();
@@ -456,7 +453,6 @@ class DepartmentController extends Controller
         }
         //グループを操作対象にする処理
         foreach($group_ids as $group_id) {
-            DB::beginTransaction();
             $already_target = Target::where('department_id',$request->department_id)->where('group_id',$group_id)->first();
             if($already_target == null) {
                 //既に登録されている場合は登録処理を行わない
@@ -465,7 +461,6 @@ class DepartmentController extends Controller
                     $already_target->department_id = $request->department_id;
                     $already_target->group_id = $group_id;
                     $already_target->save();
-                    DB::commit();
                 }catch(\Exception $e) {
                     //エラー時処理
                     DB::rollBack();
@@ -473,7 +468,12 @@ class DepartmentController extends Controller
                 }
             }
         }
+        DB::commit();
         return redirect('/department')->with(MessageDef::SUCCESS,MessageDef::SUCCESS_TARGET);
+    }
+
+    public function return(Request $request){
+        return redirect('/department')->with(MessageDef::ERROR, MessageDef::ERROR_DELETE);
     }
 }
 

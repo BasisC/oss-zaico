@@ -22,13 +22,13 @@ class CreateBelongGroupsTable extends Migration
             $table->foreign('group_id')
                 ->references('id')
                 ->on('groups')
-                ->onDelete('restrict')
-                ->onUpdate('restrict');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
             $table->foreign('warehouse_id')
                 ->references('id')
                 ->on('warehouses')
-                ->onDelete('restrict')
-                ->onUpdate('restrict');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
         });
     }
 

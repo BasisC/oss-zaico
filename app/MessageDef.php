@@ -45,6 +45,7 @@ class MessageDef
     const SUCCESS_DELETE_WAREHOUSE = "倉庫を削除しました";
     const SUCCESS_BELONG_WAREHOUSE = "グループ所属を変更しました";
     const SUCCESS_EDIT_GROUP = "グループを編集しました";
+    const SUCCESS_DELETE_GROUP = "グループを削除しました";
     const SUCCESS_EDIT_USER = "ユーザを編集しました";
     const SUCCESS_DELETE_USER = "ユーザを削除しました";
     const SUCCESS_BELONG_DEPARTMENT = "部署に所属しました";

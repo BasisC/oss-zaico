@@ -119,8 +119,6 @@ class UserController extends Controller
     protected function rules($name ,$email)
     {
         return [
-           // 'name' => 'required|string|max:191|unique:users,name,'.$name.',name',
-            //'email' => 'required|string|email|max:191|unique:users,email,'.$email.',email',
             'password' => 'string|min:6|nullable',
             'email' => [
                 Rule::unique('users', 'email')->whereNot('email', $email),
@@ -163,4 +161,8 @@ class UserController extends Controller
            return redirect('/user')->with(MessageDef::ERROR, MessageDef::ERROR_DELETE);
        }
    }
+
+    public function return(Request $request){
+        return redirect('/user')->with(MessageDef::ERROR, MessageDef::ERROR_DELETE);
+    }
 }

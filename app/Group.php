@@ -12,4 +12,10 @@ class Group extends Model
         'group_name' => 'required | max:191',
     );
 
+    public static $create_rules = array(
+        'group_name' => 'required | max:191',
+    );
+
+
+
 }
