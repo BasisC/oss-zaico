@@ -13,16 +13,18 @@ class CreateClassesTable extends Migration
      */
     public function up()
     {
-        Schema::create('classes', function (Blueprint $table) {
+        Schema::create('classifications', function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('target_id')->unsigned();
+            $table->string('classification_name');
+            $table->integer('warehouse_id')->unsigned();
+            $table->string('address');
             $table->timestamps();
-            
-            $table->foreign('target_id')
+
+            $table->foreign('warehouse_id')
                 ->references('id')
-                ->on('targets')
-                ->onDelete('restrict')
-                ->onUpdate('restrict');
+                ->on('warehouses')
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
         });
     }
 
@@ -33,6 +35,6 @@ class CreateClassesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('classes');
+        Schema::dropIfExists('classifications');
     }
 }

@@ -4,15 +4,16 @@ namespace App\Http\Controllers;
 
 use App\MessageDef;
 use App\SystemDef;
+use App\Warehouse;
 use Illuminate\Http\Request;
 use App\Department;
 use App\User;
 use App\Target;
-use App\Group;
 use App\BelongDepartment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class DepartmentController extends Controller
@@ -346,23 +347,24 @@ class DepartmentController extends Controller
     public function targetList(Request $request){
         //部署を取得する
         $department = Department::find($request->id);
-        if($department == null){
+        /*if($department == null){
             //存在しない部署IDを選択した場合の処理。
             return redirect('/department')->with(MessageDef::ERROR,MessageDef::ERROR_NON_ID);
-        }
-        $sort = $this->setValue($request,'sort','group_id');
-        try {
+        }*/
+        $sort = $this->setValue($request,'sort','warehouse_id');
+
+       /* try {*/
             //正常ケース
-            $targets = DB::table('groups')->join('targets', 'groups.id', '=', 'targets.group_id')
+            $targets = DB::table('warehouses')->join('targets', 'warehouses.id', '=', 'targets.warehouse_id')
                 ->where('department_id',$request->id)
                 ->orderBy($sort, 'asc')
                 ->paginate(SystemDef::PAGE_NUMBER);
-        }catch(\Exception $e){
+        /*}catch(\Exception $e){*/
             //情報の取得に失敗したケース
-            return redirect('/department/target_list/'.$request->id)->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
-        }
+           // return redirect('/department/target_list/'.$request->id)->with(MessageDef::ERROR, MessageDef::ERROR_UNEXPECT);
+        //}
         //取得した情報をセットしviewに送る
-        $param = ['department'=>$department,'targets'=>$targets,'sort'=>$sort];
+        $param = ['department'=>$department,'sort'=>$sort,'targets'=>$targets];
         return view('department.warehouse_detail',$param);
     }
 
@@ -384,16 +386,16 @@ class DepartmentController extends Controller
             return redirect('/department')->with(MessageDef::ERROR,MessageDef::ERROR_NON_ID);
         }
         //全てのグループ
-        $groups = Group::all();
+        $warehouses = Warehouse::all();
         //操作対象になっているグループのID
         $targets = Target::where('department_id',$request->id)->get();
-        $target_groups = array();
+        $target_warehouses = array();
         foreach($targets as $target){
             //操作対象になっているグループIDを配列に入れる。（array_searchを行うため）
-            array_push($target_groups,$target['group_id']);
+            array_push($target_warehouses,$target['warehouse_id']);
         }
         //取得したデータをセットし送信する
-        $param = ['department'=>$department,'groups'=>$groups,'target_groups'=>$target_groups];
+        $param = ['department'=>$department,'warehouses'=>$warehouses,'target_warehouses'=>$target_warehouses];
         return view('department.target',$param);
     }
 
@@ -418,15 +420,16 @@ class DepartmentController extends Controller
          *already_target_groups => 操作対象になっているグループのデータ
          *already_targets_group_idsb=> 操作対象になっているグループのID
          */
-        $group_ids = $request->group_id;
-        $already_target_groups = Target::where('department_id',$request->department_id)->get();
-        $already_target_group_ids = array();
+        $warehouse_ids = $request->warehouse_id;
+        $already_target_warehouses = Target::where('department_id',$request->department_id)->get();
+        $already_target_warehouses_ids = array();
+        Log::debug($already_target_warehouses);
 
         //操作対象になっているグループのIDを配列に格納する
-        foreach($already_target_groups as $already_target_group){
-            array_push($already_target_group_ids,$already_target_group['group_id']);
+        foreach($already_target_warehouses as $already_target_warehouse){
+            array_push( $already_target_warehouses_ids , $already_target_warehouse['warehouse_id']);
         }
-        if($group_ids == null) {
+        if($warehouse_ids == null) {
             //チェックが一つもついていない場合
             DB::beginTransaction();
             try {
@@ -442,11 +445,11 @@ class DepartmentController extends Controller
         }else{
             //一つでもチェックが入っている場合
             DB::beginTransaction();
-            foreach( $already_target_group_ids as $already_target_group_id){
-                $chk = in_array($already_target_group_id, $group_ids,true);
+            foreach( $already_target_warehouses_ids as $already_target_warehouse_id){
+                $chk = in_array($already_target_warehouse_id, $warehouse_ids,true);
                 if($chk == false){
                     try{//「操作対象 => 操作対象から外す」処理
-                        Target::where('group_id', $already_target_group_id)->where('department_id',$request->department_id)->delete();
+                        Target::where('warehouse_id', $already_target_warehouse_id)->where('department_id',$request->department_id)->delete();
                     }catch(\Exception $e){
                         //エラー時処理
                         DB::rollBack();
@@ -456,14 +459,14 @@ class DepartmentController extends Controller
             }
         }
         //グループを操作対象にする処理
-        foreach($group_ids as $group_id) {
-            $already_target = Target::where('department_id',$request->department_id)->where('group_id',$group_id)->first();
+        foreach($warehouse_ids as $warehouse_id) {
+            $already_target = Target::where('department_id',$request->department_id)->where('warehouse_id',$warehouse_id)->first();
             if($already_target == null) {
                 //既に登録されている場合は登録処理を行わない
                 try {
                     $already_target = new Target;
                     $already_target->department_id = $request->department_id;
-                    $already_target->group_id = $group_id;
+                    $already_target->warehouse_id = $warehouse_id;
                     $already_target->save();
                 }catch(\Exception $e) {
                     //エラー時処理
@@ -476,6 +479,13 @@ class DepartmentController extends Controller
         return redirect('/department')->with(MessageDef::SUCCESS,MessageDef::SUCCESS_TARGET);
     }
 
+    /**
+     * department/delete/{department_id}にアクセス時使用。
+     *
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function return(Request $request){
         return redirect('/department')->with(MessageDef::ERROR, MessageDef::ERROR_DELETE);
     }

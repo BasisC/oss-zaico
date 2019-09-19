@@ -21,10 +21,7 @@ class WarehouseController extends Controller
      */
 	public function index(Request $request ){
         //$sortの初期値を設定する
-	    $sort = $request->sort;
-	    if($sort == null){
-            $sort = 'id';
-        }
+	    $sort = $this->setValue($request,'col','id');
 	    //倉庫の情報を取得。ぺジネーションして表示する
         try {
             $items = Warehouse::orderBy($sort, 'asc')->paginate(5);

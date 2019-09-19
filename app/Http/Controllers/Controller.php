@@ -10,6 +10,8 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\SystemDef;
 use App\MessageDef;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
 
 class Controller extends BaseController
 {
@@ -50,8 +52,8 @@ class Controller extends BaseController
      * @return mixed|string => 出力した値を元に検索を行い、結果を表示する。
      */
 
-    public function getSessionValue(Request $request,$caram,$sort,$key){
-        if($request->$caram == null){//検索条件が指定されていない時
+    public function getSessionValue(Request $request,$col,$sort,$key){
+        if($request->$col == null){//検索条件が指定されていない時
             if($sort == null){
                 //セッションに保存された値を削除し、ワイルドカードを返す
                 $request->session()->forget($key);
@@ -63,10 +65,52 @@ class Controller extends BaseController
 
         }else{//検索条件が指定さてている時
             //セッションに検索条件を保存
-            $request->session()->put($key,$request->$caram);
-            return $request->$caram;
+            $request->session()->put($key,$request->$col);
+            return $request->$col;
         }
 
+    }
+
+    /**
+     * ログに出力するフォーマットを作成する。（エラー時処理）
+     *
+     * @param $controller => コントローラ―ファイルの名前
+     * @param $function => 処理の名前
+     * @param $e => エラー名
+     * @return string => フォーマット
+     */
+    public function setLogText($controller,$function,$e){
+        return $controller."(".$function.")_".$e;
+    }
+
+    /**
+     * ログに出力するフォーマットを作成する。（正常時処理）
+     *
+     * @param $controller => コントローラーファイルの名前
+     * @param $function => 処理の名前
+     * @return string => フォーマット
+     */
+    public function setLogTextSuccess($controller,$function){
+        return $controller."(".$function.")_success";
+    }
+
+    public function getBelongDepart($user_id){
+        $belong_depart = DB::table('belong_departments')->join('users', 'belong_departments.user_id', '=', 'users.id')
+            ->join('departments','belong_departments.department_id','=','departments.id')
+            ->where('belong_departments.user_id',$user_id)->get();
+
+        return $belong_depart;
+    }
+
+    public function getTarget($target_depart_ids){
+        DB::table('targets')->join('groups','targets.group_id','=','groups.id')
+            ->whereIn('department_id',$target_depart_ids)->get();
+    }
+
+    public function getUserInfo($col){
+        $user = Auth::user();
+        $date = $user->$col;
+        return $date;
     }
 
 }

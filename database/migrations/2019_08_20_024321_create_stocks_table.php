@@ -16,14 +16,9 @@ class CreateStocksTable extends Migration
         Schema::create('stocks', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('warehouse_id')->unsigned();
-            $table->integer('class_id')->unsigned();
-            $table->string('serial number');
+            $table->integer('classification_id')->unsigned();
+            $table->string('serial_number');
             $table->integer('status')->default(0);
-            $table->integer('user_id_0')->unsigned();
-            $table->integer('user_id_1')->unsigned()->nullable();
-            $table->integer('user_id_2')->unsigned()->nullable();
-            $table->integer('user_id_3')->unsigned()->nullable();
-            $table->integer('user_id_4')->unsigned()->nullable();
             $table->timestamps();
             
             $table->foreign('warehouse_id')
@@ -31,34 +26,9 @@ class CreateStocksTable extends Migration
                 ->on('warehouses')
                 ->onDelete('cascade')
                 ->onUpdate('cascade');
-            $table->foreign('class_id')
+            $table->foreign('classification_id')
                 ->references('id')
-                ->on('classes')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
-            $table->foreign('user_id_0')
-                ->references('id')
-                ->on('users')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
-            $table->foreign('user_id_1')
-                ->references('id')
-                ->on('users')
-                ->onDelete('restrict')
-                ->onUpdate('restrict');
-            $table->foreign('user_id_2')
-                ->references('id')
-                ->on('users')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
-            $table->foreign('user_id_3')
-                ->references('id')
-                ->on('users')
-                ->onDelete('cascade')
-                ->onUpdate('cascade');
-            $table->foreign('user_id_4')
-                ->references('id')
-                ->on('users')
+                ->on('classifications')
                 ->onDelete('cascade')
                 ->onUpdate('cascade');
         });

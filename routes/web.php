@@ -21,6 +21,7 @@ Route::get ('test','TestController@index');
 
 Route::group(['middleware' => 'auth'], function() {
     Route::get('/home', 'HomeController@index')->name('home');
+
     //倉庫管理
     Route::get('/warehouse','WarehouseController@index');
     Route::get('/warehouse/add','WarehouseController@add');
@@ -29,18 +30,6 @@ Route::group(['middleware' => 'auth'], function() {
     Route::post('/warehouse/edit/{id}','WarehouseController@update');
     Route::get('/warehouse/delete/{id}','GroupController@return');
     Route::post('/warehouse/delete/{id}/', 'WarehouseController@delete');
-
-    //グループ管理
-    Route::get('/group','GroupController@index');
-    Route::get('/group/detail/{id}','GroupController@detail');
-    Route::get('/group/detail/{id}/belong','GroupController@belong');
-    Route::post('/group/detail/{id}/belong','GroupController@belonging');
-    Route::get('/group/edit/{id}','GroupController@edit');
-    Route::post('/group/edit/{id}','GroupController@update');
-    Route::get('/group/add','GroupController@add');
-    Route::post('/group/add','GroupController@create');
-    Route::get('/group/delete/{id}','GroupController@return');
-    Route::post('/group/delete/{id}','GroupController@delete');
 
     //ユーザ管理
     Route::get('/user','UserController@index');
@@ -66,4 +55,28 @@ Route::group(['middleware' => 'auth'], function() {
     Route::get('/department/target_list/{id}/target','DepartmentController@target');
     Route::post('/department/target_list/{id}/target','DepartmentController@targeting');
 
+    //分類管理
+    Route::get('/classification','ClassificationController@index');
+    Route::post('/classification','ClassificationController@index');
+    Route::get('/classification/add','ClassificationController@add');
+    Route::post('/classification/add','ClassificationController@create');
+    Route::get('/classification/edit/{id}','ClassificationController@edit');
+    Route::post('/classification/edit/{id}','ClassificationController@update');
+    Route::get('/classification/delete/{id}','ClassificationController@return');
+    Route::post('/classification/delete/{id}','ClassificationController@delete');
+
+    //機器管理
+    Route::get('/stock','StockController@index');
+    Route::post('/stock','StockController@index');
+    Route::get('/stock/warehouse/{id}','StockController@warehouse');
+    Route::post('/stock/warehouse/{id}','StockController@warehouse');
+    Route::get('/stock/warehouse/{id}/add','StockController@add');
+    Route::post('/stock/warehouse/{id}/add','StockController@create');
+    Route::get('/stock/warehouse/{id}/edit/{stock_id}','StockController@edit');
+    Route::post('/stock/warehouse/{id}/edit/{stock_id}','StockController@update');
+    //Route::get('/stock/warehouse/{id}/delete/{stock_id}','StockController@return');
+    Route::post('/stock/warehouse/{id}/delete/{stock_id}','StockController@delete');
+
+    //練習用のページ
+    Route::get('/test',"TestController@index");
 });

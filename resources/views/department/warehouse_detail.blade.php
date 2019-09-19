@@ -39,8 +39,8 @@
                             <tbody>
                             @foreach($targets as $target)
                             <tr>
-                                <td>{{$target->group_id}}</td>
-                                <td>{{$target->group_name}}</td>
+                                <td>{{$target->warehouse_id}}</td>
+                                <td>{{$target->warehouse_name}}</td>
                             </tr>
                             @endforeach
                             </tbody>

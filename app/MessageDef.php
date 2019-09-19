@@ -29,6 +29,8 @@ class MessageDef
     const ERROR_UNEXPECT = "予期できないエラーです";
     const ERROR_NOT_GET_DB = "データを取得できませんでした";
     const ERROR_NOT_PARAMETER = "この項目でソートはできません";
+    const ERROR_NOT_CREATE_CL = "この分類名は選択した倉庫に存在します";
+
 
 
     //警告
@@ -54,6 +56,9 @@ class MessageDef
     const SUCCESS_BELONG_WAREHOUSE = "グループ所属を変更しました";
     const SUCCESS_EDIT_GROUP = "グループを編集しました";
     const SUCCESS_DELETE_GROUP = "グループを削除しました";
+
+    //分類管理
+    const SUCCESS_DELETE_CLASSIFICATION ="分類を削除する";
 
 
 

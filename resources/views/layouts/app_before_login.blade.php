@@ -104,18 +104,13 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/group">
-              ☆倉庫グループ管理
+            <a class="nav-link" href="/classification">
+              ☆分類管理
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">
-              ★分類管理
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              ★機器管理
+            <a class="nav-link" href="/stock">
+              ☆機器管理
             </a>
           </li>
         </ul>

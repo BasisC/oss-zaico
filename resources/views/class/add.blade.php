@@ -13,23 +13,23 @@
             <div class="col-md-10 ">
                 <div class="panel panel-default">
                     <div class="col-md-6 ">
-                        <h3>倉庫登録画面</h3>
+                        <h3>分類登録画面</h3>
                     </div>
                     <br>
                     <br>
                     <hr>
-                    <form class="form-horizontal" method="POST" action="/warehouse/add">
+                    <form class="form-horizontal" method="POST" action="/classification/add">
                         {{ csrf_field() }}
 
-                        <div class="form-group{{ $errors->has('warehouse_name') ? ' has-error' : '' }}">
-                            <label for="warehouse_name" class="col-md-4 control-label">Warehouse_name</label>
+                        <div class="form-group{{ $errors->has('classification_name') ? ' has-error' : '' }}">
+                            <label for="classification_name" class="col-md-4 control-label">classification_name</label>
 
                             <div class="col-md-6">
-                                <input id="warehouse_name" type="text" class="form-control" name="warehouse_name" value="{{ old('warehouse_name') }}" required autofocus>
+                                <input id="classification_name" type="text" class="form-control" name="classification_name" value="{{ old('classification_name') }}" required autofocus>
 
-                                @if ($errors->has('warehouse_name'))
+                                @if ($errors->has('classification_name'))
                                     <span class="help-block">
-                                        <strong>{{ $errors->first('warehouse_name') }}</strong>
+                                        <strong>{{ $errors->first('classification_name') }}</strong>
                                     </span>
                                 @endif
                             </div>
@@ -49,19 +49,24 @@
                             </div>
                         </div>
 
-                        <div class="form-group{{ $errors->has('tel-number') ? ' has-error' : '' }}">
-                            <label for="password" class="col-md-4 control-label">Tel_number</label>
+                        <div class="form-group{{ $errors->has('warehouse_id') ? ' has-error' : '' }}">
+                            <label for="warehouse_id" class="col-md-4 control-label">warehouse</label>
 
                             <div class="col-md-6">
-                                <input id="tel_number" type="text" class="form-control" name="tel_number" required>
+                                <select  class="form-control" name="warehouse_id">
+                                    @foreach($warehouses as $warehouse)
+                                        <option value={{$warehouse->id}}>{{$warehouse->warehouse_name}}</option>
+                                    @endforeach
+                                </select>
 
-                                @if ($errors->has('tel_number'))
+                                @if ($errors->has('warehouse_id'))
                                     <span class="help-block">
-                                        <strong>{{ $errors->first('tel_number') }}</strong>
+                                        <strong>{{ $errors->first('warehouse_id') }}</strong>
                                     </span>
                                 @endif
                             </div>
                         </div>
+
 
                         <div class="form-group">
                             <div class="col-md-6 col-md-offset-4">

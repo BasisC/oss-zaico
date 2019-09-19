@@ -44,10 +44,10 @@
                                                 </tr>
                                                 </thead>
                                                 <tbody>
-                                                @foreach($groups as $group)
+                                                @foreach($warehouses as $warehouse)
                                                     <tr>
-                                                        <td><input type="checkbox" name="group_id[]"  value="{{ $group->id }}"
-                                                                   @if(in_array($group->id, $target_groups,true))checked @endif> : {{$group->group_name}} </td>
+                                                        <td><input type="checkbox" name="warehouse_id[]"  value="{{ $warehouse->id }}"
+                                                                   @if(in_array($warehouse->id, $target_warehouses,true))checked @endif> : {{$warehouse->warehouse_name}} </td>
                                                     </tr>
                                                 @endforeach
                                             </table>
