@@ -13,11 +13,14 @@
         <div class="col-md-10 ">
             <div class="panel panel-default">
                 <div class="col-md-6 ">
-                <h3>編集画面（{{$stock->serial_number}}）</h3>
+                <h3>編集画面（{{$stock->serial_number}}</h3>
                 </div>
                 <br>
                 <br>
                 <hr>
+                ※ステータス変更は絶対に分けること（テーブルおかしくなるよ！）
+                <br>
+                <br>
                 <form class="form-horizontal" method="POST" action="/stock/warehouse/{{$warehouse->id}}/edit/{{$stock->id}}}">
                     {{ csrf_field() }}
                     <input type="hidden"name="stock_id"value="{{$stock->id}}">
@@ -54,7 +57,6 @@
                             @endif
                         </div>
                     </div>
-
                     <div class="form-group">
                         <div class="col-md-6 col-md-offset-4">
                             <button type="submit" class="btn btn-primary"value="send">
@@ -62,10 +64,10 @@
                             </button>
                         </div>
                     </div>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
-
 @endsection

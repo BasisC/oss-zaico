@@ -74,8 +74,14 @@ Route::group(['middleware' => 'auth'], function() {
     Route::post('/stock/warehouse/{id}/add','StockController@create');
     Route::get('/stock/warehouse/{id}/edit/{stock_id}','StockController@edit');
     Route::post('/stock/warehouse/{id}/edit/{stock_id}','StockController@update');
+    Route::get('/stock/warehouse/{id}/status/{stock_id}','StockController@status');
+    Route::get('/stock/warehouse/{id}/status/{stock_id}/change','StockController@changeStatus');
+    Route::post('/stock/warehouse/{id}/status/{stock_id}/change','StockController@updateStatus');
+
     //Route::get('/stock/warehouse/{id}/delete/{stock_id}','StockController@return');
     Route::post('/stock/warehouse/{id}/delete/{stock_id}','StockController@delete');
+
+
 
     //練習用のページ
     Route::get('/test',"TestController@index");

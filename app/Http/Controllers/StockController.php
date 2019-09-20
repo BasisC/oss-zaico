@@ -181,8 +181,14 @@ class StockController extends Controller
            //失敗時の処理
            return redirect('/stock/warehouse/'.$warehouse->id)->with(MessageDef::ERROR, MessageDef:: ERROR_UNEXPECT );
        }
+       $status_list = array(
+           "INSPECTED" => SystemDef::INSPECTED,//検品済
+           "CANT_TAKEOUT" => SystemDef::CANT_TAKEOUT,//持出不可
+           "TAKING_OUT"=>SystemDef::TAKING_OUT,//持出中
+           "INSTALLED" => SystemDef::INSTALLED,//設置済
+           "RETURNING"=>SystemDef::RETURNING) ;//返品中
        //値をセットし受け渡す
-       $param = ['warehouse'=>$warehouse,"stock"=>$stock,"classifications"=>$classifications];
+       $param = ['warehouse'=>$warehouse,"stock"=>$stock,"classifications"=>$classifications,'status_list'=>$status_list];
        return view('stock.edit',$param);
    }
 
@@ -235,7 +241,6 @@ class StockController extends Controller
             'classification_id' => [
                 'string',
                 'max:191'
-
             ]
         ];
     }
@@ -266,6 +271,54 @@ class StockController extends Controller
             info($e->getMessage());
             DB::rollBack();
             return redirect('/stock/warehouse/'.$request->id)->with(MessageDef::ERROR, MessageDef::ERROR_DELETE);
+        }
+    }
+
+    public function status(Request $request){
+        $stock = Stock::find($request->stock_id);
+        $warehouse = Warehouse::find($request->id);
+        $stock_history = StockHistory::where('stock_id',$request->stock_id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+        $param = ['stock'=>$stock,'warehouse'=>$warehouse,'stock_history'=>$stock_history];
+        return view('stock.status',$param);
+    }
+
+    public function changeStatus(Request $request){
+        $stock = Stock::find($request->stock_id);
+        $warehouse = Warehouse::find($request->id);
+        $status_list = array(
+            "INSPECTED" => SystemDef::INSPECTED,//検品済
+            "CANT_TAKEOUT" => SystemDef::CANT_TAKEOUT,//持出不可
+            "TAKING_OUT"=>SystemDef::TAKING_OUT,//持出中
+            "INSTALLED" => SystemDef::INSTALLED,//設置済
+            "RETURNING"=>SystemDef::RETURNING) ;//返品中
+        $param = ['stock'=>$stock,'warehouse'=>$warehouse,'status_list'=>$status_list];
+        return view('stock.change',$param);
+    }
+
+    public function updateStatus(Request $request)
+    {
+        //フォームにて入力された情報を取得する
+        $user_id = $this->getUserInfo('id');
+        $stock_history = new StockHistory;
+        $stock = Stock::find($request->stock_id);
+        //編集の対象になるユーザの情報を取得
+        DB::beginTransaction();
+        try {
+            //変更処理
+            $stock->status = $request->new_status;
+            $stock->save();
+            $stock_history->user_id = $user_id;
+            $stock_history->stock_id = $request->stock_id;
+            $stock_history->status = $request->new_status;
+            $stock_history->save();
+            DB::commit();
+            return redirect("/stock/warehouse/".$request->id)->with(MessageDef::SUCCESS,MessageDef::SUCCESS_EDIT_USER);
+        } catch (\Exception $e) {
+            //変更処理が失敗した時の処理
+            DB::rollBack();
+            return redirect("/stock/warehouse/".$request->id."edit/".$request->stock_id)->with(MessageDef::ERROR, MessageDef::ERROR_EDIT);
         }
     }
 }

@@ -106,6 +106,8 @@
                                     <td>{{$stock->serial_number}}</td>
                                     <td>{{$stock->setStatusName($stock->status)}}</td>
                                     <td>  <a href="/stock/warehouse/{{$warehouse->id}}/edit/{{$stock->id}}" class="btn btn-primary btn-sm">編集</a></td>
+                                    <td>  <a href="/stock/warehouse/{{$warehouse->id}}/detail/{{$stock->id}}" class="btn btn-primary btn-sm">詳細</a></td>
+                                    <td>  <a href="/stock/warehouse/{{$warehouse->id}}/status/{{$stock->id}}" class="btn btn-primary btn-sm">ステータス変更</a></td>
                                     <td>
                                         <form action="/stock/warehouse/{{$warehouse->id}}/delete/{{$stock->id}}" method="POST"  onSubmit="return checkSubmit()">
                                             {{ csrf_field() }}
