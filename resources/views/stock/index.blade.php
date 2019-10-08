@@ -14,13 +14,6 @@
         @endif
     </script>
 
-
-
-
-
-
-
-
     <div class="container">
     <div class="row">
         <div class="col-md-11 ">
@@ -31,8 +24,8 @@
                     <div class="col-md-6 ">
                         <br>
                         <p style="text-align: right">
-                            <button type="submit" class="btn btn-primary " onclick="location.href='/stock/add'">
-                                登録する>>
+                            <button type="submit" class="btn btn-primary " onclick="location.href='/stock/table'">
+                                テーブル追加>>
                             </button>
                         </p>
                     </div>
@@ -95,7 +88,15 @@
                             @foreach($targets as $target)
                                 <tr>
                                     <td>{{$target->warehouse_name}}</td>
-                                    <td><a href="/stock/warehouse/{{$target->warehouse_id}}">機器を管理する</a></td>
+                                    <td><a href="/stock/table/create/{{$target->warehouse_id}}">テーブルを作成する</a></td>
+                                    <td><a href="/stock/table/edit/{{$target->warehouse_id}}">テーブルを編集する</a></td>
+                                    <td><a href="/stock/table/{{$target->warehouse_id}}">テーブルを閲覧する</a></td>
+                                    <td>
+                                        <form action="/stock/table/delete/{{$target->warehouse_id}}" method="POST"  onSubmit="return checkSubmit()">
+                                        {{ csrf_field() }}
+                                            <input type="submit" value="削除" class="btn btn-standard btn-sm btn-dell" >
+                                        </form>
+                                    </td>
                                 </tr>
                             @endforeach
                             </tbody>

@@ -91,8 +91,8 @@ class Controller extends BaseController
      * @return string => フォーマット
      */
     public function setLogTextSuccess($controller,$function){
-        return $controller."(".$function.")_success";
-    }
+    return $controller."(".$function.")_success";
+}
 
     public function getBelongDepart($user_id){
         $belong_depart = DB::table('belong_departments')->join('users', 'belong_departments.user_id', '=', 'users.id')

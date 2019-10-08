@@ -71,12 +71,12 @@ class RegisterController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => bcrypt($data['password']),
-            'per_department_create' => self::valueChk($data,'per_department_create'),
-            'per_department_update' => self::valueChk($data,'per_department_update'),
-            'per_department_delete' => self::valueChk($data,'per_department_delete'),
-            'per_group_create' => self::valueChk($data,'per_group_create'),
-            'per_group_update' => self::valueChk($data,'per_group_update'),
-            'per_group_delete' => self::valueChk($data,'per_group_delete'),
+            'per_department_create' => $this->valueChk($data,'per_department_create'),
+            'per_department_update' => $this->valueChk($data,'per_department_update'),
+            'per_department_delete' => $this->valueChk($data,'per_department_delete'),
+            'per_group_create' => $this->valueChk($data,'per_group_create'),
+            'per_group_update' => $this->valueChk($data,'per_group_update'),
+            'per_group_delete' => $this->valueChk($data,'per_group_delete'),
 
         ]);
     }

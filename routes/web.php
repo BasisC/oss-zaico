@@ -17,7 +17,7 @@ Route::get('/', function () {
 
 Auth::routes();
 
-Route::get ('test','TestController@index');
+
 
 Route::group(['middleware' => 'auth'], function() {
     Route::get('/home', 'HomeController@index')->name('home');
@@ -77,12 +77,26 @@ Route::group(['middleware' => 'auth'], function() {
     Route::get('/stock/warehouse/{id}/status/{stock_id}','StockController@status');
     Route::get('/stock/warehouse/{id}/status/{stock_id}/change','StockController@changeStatus');
     Route::post('/stock/warehouse/{id}/status/{stock_id}/change','StockController@updateStatus');
-
-    //Route::get('/stock/warehouse/{id}/delete/{stock_id}','StockController@return');
+    Route::get('/stock/warehouse/{id}/delete/{stock_id}','StockController@return');
     Route::post('/stock/warehouse/{id}/delete/{stock_id}','StockController@delete');
+    //テーブル作成用のテスト処理
+    Route::get('/stock/table/{id}','StockController@table');
+    Route::get('/stock/table/create/{id}','StockController@tableAdd');
+    Route::post('/stock/table/create/{id}','StockController@tableCreate');
+    Route::post('/stock/table/delete/{id}','StockController@tableDelete');
+    Route::get('/stock/table/delete/{id}','StockController@return');
+    Route::get('stock/table/data_add/{id}','StockController@addTableData');
+    Route::post('stock/table/data_add/{id}','StockController@createTableData');
+    Route::get('stock/table/edit/{warehouse_id}','StockController@editTable');
 
+
+    Route::get('/profile', 'ProfileController@index');
+    Route::post('/profile', 'ProfileController@store');
 
 
     //練習用のページ
     Route::get('/test',"TestController@index");
+
+    Route::post('/upload', 'HomeController@upload');
+
 });

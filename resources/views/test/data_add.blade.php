@@ -49,32 +49,35 @@
 </script>
 <br>
 
-<table class="table table-striped table-sm">
-    <thead>
-    <tr>
-        <th>カラム名</th>
-        <th>データ型</th>
-        <th>空白を許可する</th>
-        <th>キー制約</th>
-        <th>初期値</th>
-        <th>その他</th>
-    </tr>
-    </thead>
-    <tbody>
-    @foreach ($col_dates as $col_date)
-        <tr>
-            <td>{{$col_date[0]}}</td>
-            <td>{{$col_date[1]}}</td>
-            <td>{{$col_date[2]}}</td>
-            <td>{{$col_date[3]}}</td>
-            <td>{{$col_date[4]}}</td>
-            <td>{{$col_date[5]}}</td>
-        </tr>
-    @endforeach
-    </tbody>
-</table>
+<form class="form-horizontal" method="POST" action="/stock/table/date_add">
+    {{ csrf_field() }}
+@foreach($col_dates as $col_date)
+    @if($col_date[0]!=="id"&&$col_date[0]!=="created_at"&&$col_date[0]!=="updated_at")
+        <input type="hidden" name="types[{{$col_date[0]}}]" value= {{$col_date[1]}} >
+        <input type="hidden" name="null_ables[{{$col_date[0]}}]" value= {{$col_date[2]}} >
+        <input type="hidden" name="col_names[]" value={{$col_date[0]}}>
+        @if(strpos($col_date[1],'int') !== false)
+                <div class="form-group{{ $errors->has($col_date[0]) ? ' has-error' : '' }}">
+                    <label for=$col_date[0] class="col-md-4 control-label">{{$col_date[0]}}!!!!!</label>
 
-<a href="/stock/table/create/{{$warehouse_id}}">登録画面>></a><br>
-<a href="/stock/table/{{$warehouse_id}}">表示画面>></a><br>
-<a href="/stock/table/date_add/{{$warehouse_id}}">データ追加画面>></a>
-</html>
+                    <div class="col-md-6">
+                        <input id=$col_date[0] type="number" class="form-control" name={{$col_date[0]}} value="{{ old($col_date[0]) }}" @if($col_date[2]==="YES" )required @endif>
+
+                        @if ($errors->has($col_date[0]))
+                            <span class="help-block">
+                                <strong>{{ $errors->first($col_date[0]) }}</strong>
+                            </span>
+                        @endif
+                    </div>
+                </div>
+        @endif
+    @endif
+@endforeach
+    <div class="form-group">
+        <div class="col-md-6 col-md-offset-4">
+            <button type="submit" class="btn btn-primary"value="send">
+                登録する>>
+            </button>
+        </div>
+    </div>
+</form>

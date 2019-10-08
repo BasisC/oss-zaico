@@ -31,6 +31,12 @@ class MessageDef
     const ERROR_NOT_PARAMETER = "この項目でソートはできません";
     const ERROR_NOT_CREATE_CL = "この分類名は選択した倉庫に存在します";
 
+    //機器管理
+    const ERROR_NOT_TABLE_VIEW = "選択したテーブルは存在しません";
+    const ERROR_NOT_ADD_TABLE = "選択した倉庫のテーブルは作成することができません";
+    const ERROR_NOT_CREATE_TABLE = "テーブルの作成に失敗しました";
+    const ERROR_TABLE_DELETE = "テーブルの削除に失敗しました";
+
 
 
     //警告
@@ -59,6 +65,8 @@ class MessageDef
 
     //分類管理
     const SUCCESS_DELETE_CLASSIFICATION ="分類を削除する";
+
+    //機器管理
 
 
 

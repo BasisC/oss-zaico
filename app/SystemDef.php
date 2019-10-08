@@ -38,5 +38,22 @@ class SystemDef
     const INSTALLED = 3;
     const RETURNING = 4;
 
+    //フォームの種類
+    const text_box = 1;
+    const text_area = 2;
+    const number = 3;
+    const radio_button = 4;
+    const check_box = 5;
+    const email = 6;
+    const img = 7;
+    const date_time = 8;
+
+    //ユニーク制約
+    const unique =1;
+    const not_unique = 0;
+
+    //null制約
+    const not_null = 0;
+    const null_able = 1;
 
 }
