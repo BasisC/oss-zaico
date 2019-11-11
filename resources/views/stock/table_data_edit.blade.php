@@ -27,7 +27,7 @@
                 <br>
                 <hr>
 
-                <form class="form-horizontal" method="POST" action="/stock/table/data_add/{{$warehouse->id}}" enctype="multipart/form-data">
+                <form class="form-horizontal" method="POST" action="/stock/table/{{$warehouse->id}}/edit/{{$record->id}}" enctype="multipart/form-data">
                     {{ csrf_field() }}
 
                     <input type="hidden" name="warehouse_id" value="{{$warehouse->id}}">
@@ -45,7 +45,7 @@
                             <div class="form-group{{ $errors->has($col_name) ? ' has-error' : '' }}">
                                 <label for="classification_id" class="col-md-4 control-label">{{$form->col_name->getName()}}</label>
                                 <div class="col-md-6">
-                                    <input type="text" class ="form-control" name="{{$form->col_fictitious_name}}">
+                                    <input type="text" class ="form-control" name="{{$form->col_fictitious_name}}" value="{{$record->$col_name}}">
                                     @if ($errors->has($col_name))
                                         <span class="help-block">
                                         <strong>{{ $errors->first($col_name) }}</strong>
@@ -60,7 +60,7 @@
                             <div class="form-group{{ $errors->has($col_name) ? ' has-error' : '' }}">
                                 <label for="classification_id" class="col-md-4 control-label">{{$form->col_name->getName()}}</label>
                                 <div class="col-md-6">
-                                    <textarea name="{{$form->col_fictitious_name}}" rows="4" cols="40"  class ="form-control"></textarea>
+                                    <textarea name="{{$form->col_fictitious_name}}" rows="4" cols="40"  class ="form-control"  value="{{$record->$col_name}}"></textarea>
                                     @if ($errors->has($col_name))
                                         <span class="help-block">
                                         <strong>{{ $errors->first($col_name) }}</strong>
@@ -75,7 +75,7 @@
                             <div class="form-group{{ $errors->has($col_name) ? ' has-error' : '' }}">
                                 <label for="classification_id" class="col-md-4 control-label">{{$form->col_name->getName()}}</label>
                                 <div class="col-md-6">
-                                    <input type="number"  class ="form-control" name="{{$form->col_fictitious_name}}">
+                                    <input type="number"  class ="form-control" name="{{$form->col_fictitious_name}}" value="{{$record->$col_name}}">
                                     @if ($errors->has($col_name))
                                         <span class="help-block">
                                         <strong>{{ $errors->first($col_name) }}</strong>
@@ -91,7 +91,7 @@
                                 <label for="classification_id" class="col-md-4 control-label">{{$form->col_name->getName()}}</label>
                                 <div class="col-md-6">
                                     @foreach($form->selects as $obj)
-                                        <input type="radio" name="{{$form->col_fictitious_name}}" value= "{{$obj->id}}" > {{$obj->select_value}}<br>
+                                        <input type="radio" name="{{$form->col_fictitious_name}}" value= "{{$obj->id}}" @if($record->$col_name == $obj->id)checked="checked"@endif> {{$obj->select_value}}<br>
                                     @endforeach
                                         @if ($errors->has($col_name))
                                             <span class="help-block">
@@ -108,7 +108,9 @@
                                 <label for="classification_id" class="col-md-4 control-label">{{$form->col_name->getName()}}</label>
                                 <div class="col-md-6">
                                     @foreach($form->selects as $obj)
-                                        <input type="checkbox" name="{{$form->col_fictitious_name}}[]" value="{{$obj->id}}" >{{$obj->select_value}}<br>
+                                        <input type="checkbox" name="{{$form->col_fictitious_name}}[]" value="{{$obj->id}}"@if(in_array($obj->id,$checkbox_value_array)) checked="checked" @endif  >{{$obj->select_value}}<br>
+
+                                        {{$record->$col_name}}<br>
                                     @endforeach
                                         @if ($errors->has($col_name))
                                             <span class="help-block">

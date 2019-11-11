@@ -36,6 +36,7 @@
                                 @foreach ($forms as $form)
                                     <th> {{$form->col_name->getName()}}</th>
                                 @endforeach
+                                <th>操作</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -49,11 +50,36 @@
                                     @endphp
                                     @if($forms[$list]['form_type_id'] == 7)
                                             <td><img src="{{ asset("storage/".$warehouse_id."_warehouse_img/". $warehouse->$ans) }}" alt="no-img" width="96" height="65"/></td>
+                                    @elseif($forms[$list]['form_type_id'] == 4)
+                                        @if($warehouse->$ans == null)
+                                            <td>    </td>
+                                            @else
+                                                <td>{{$select_array[$ans][$warehouse->$ans]}}</td>
+                                            @endif
+                                    @elseif($forms[$list]['form_type_id'] == 5)
+                                        @if($warehouse->$ans == null)
+                                            <td>   </td>
+                                        @else
+                                            <td>
+                                            @foreach($select_array[$warehouse->id] as $select_id)
+                                                      {{$select_array[$ans][$select_id]}}
+                                            @endforeach
+                                            </td>
+                                        @endif
                                     @else
                                             <td>{{$warehouse->$ans}}</td>
                                     @endif
 
                                 @endfor
+                                    <td>
+                                        <a href="/stock/table/{{$warehouse_id}}/edit/{{$warehouse->id}}" class="btn btn-primary btn-sm">編集</a>
+                                    </td>
+                                    <td>
+                                        <form action="/stock/table/{{$warehouse_id}}/delete/{{$warehouse->id}}" method="POST"  onSubmit="return checkSubmit()">
+                                            {{ csrf_field() }}
+                                            <input type="submit" value="削除" class="btn btn-standard btn-sm btn-dell" >
+                                        </form>
+                                    </td>
                                 </tr>
                             @endforeach
 

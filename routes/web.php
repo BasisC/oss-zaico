@@ -86,8 +86,12 @@ Route::group(['middleware' => 'auth'], function() {
     Route::post('/stock/table/delete/{id}','StockController@tableDelete');
     Route::get('/stock/table/delete/{id}','StockController@return');
     Route::get('stock/table/data_add/{id}','StockController@addTableData');
-    Route::post('stock/table/data_add/{id}','StockController@createTableData');
-    Route::get('stock/table/edit/{warehouse_id}','StockController@editTable');
+    Route::post('/stock/table/data_add/{id}','StockController@createTableData');
+    Route::get('/stock/table/edit/{warehouse_id}','StockController@editTable');
+    Route::get('/stock/table/{warehouse_id}/delete/{record_id}','StockController@return');
+    Route::post('/stock/table/{warehouse_id}/delete/{record_id}','StockController@deleteRecord');
+    Route::get('/stock/table/{warehouse_id}/edit/{record_id}','StockController@editRecord');
+    Route::post('/stock/table/{warehouse_id}/edit/{record_id}','StockController@updateRecord');
 
 
     Route::get('/profile', 'ProfileController@index');

@@ -18,12 +18,14 @@ use App\Classification;
 use App\StockHistory;
 use App\BelongDepartment;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Storage;
 use Mockery\Tests\React_WritableStreamInterface;
 
 class StockController extends Controller
@@ -365,6 +367,37 @@ class StockController extends Controller
             Log::error($this->setErrorLog('table(get_col)',$e));
             return redirect('/stock')->with(MessageDef::ERROR, MessageDef::ERROR_NOT_TABLE_VIEW);
         }
+        $i = 1;
+        $select_array  = null;
+        $value_array = null;
+        foreach($forms as $form){
+            if($form['form_type_id']==SystemDef::check_box){
+                $form_id = $form['id'];
+                $select_values = Select::where("form_id",$form_id)->get();
+                foreach($select_values as $select_value){
+                    $select_array["col_".$i][$select_value["id"]] = $select_value['select_value'];
+                }
+                //foreach($warehouses as $warehouse){
+                  //  $select_values[$warehouse["id"]]=$warehouse['col_'.$i]
+                //}
+                $col_name = "col_".$i;
+                foreach($warehouses as $warehouse) {
+                    if ($warehouse->$col_name !== null) {
+                        //$warehouse['col_' . $i]
+                        $select_array[$warehouse->id] = explode(",", $warehouse->$col_name);
+                    }
+                }
+            }
+            elseif($form['form_type_id']==SystemDef::radio_button){
+                $form_id = $form['id'];
+                $select_values = Select::where("form_id",$form_id)->get();
+                foreach($select_values as $select_value){
+                    $select_array["col_".$i][$select_value{"id"}] = $select_value['select_value'];
+                }
+            }
+            Log::debug($select_array);
+            $i += 1;
+        }
         //受け渡す値
         $param  = [
             'warehouses'=>$warehouses,//作成したテーブルに登録したレコード
@@ -373,6 +406,7 @@ class StockController extends Controller
             'warehouse_name'=>$warehouse_name,//
             'forms'=>$forms,
             'col_count'=>$col_count,
+            'select_array'=>$select_array
         ];
         return view('stock.table',$param);
     }
@@ -566,6 +600,13 @@ class StockController extends Controller
      */
     public function tableDelete(Request $request){
         DB::beginTransaction();
+        $chk_img = Form::where('warehouse_id',$request->id)->where('form_type_id',SystemDef::img)->get();
+        if($chk_img !== null){
+            //'local'= storage/app
+            Storage::disk('local')->put('public/1_warehouse_img/test.txt', 'Contents');
+            Storage::deleteDirectory('public/'.$request->id.'_warehouse_img');
+            Log::debug("削除完了！！");
+        }
         try {
             //テーブルの削除
             Schema::drop($request->id.'_warehouses');
@@ -578,6 +619,7 @@ class StockController extends Controller
                 ColName::where('form_id', $form['id'])->delete();
                 // TODO: 画像フォルダの削除処理も追加すること
             }
+
             DB::commit();
         }catch(Exception $e){
             Log::debug($e);
@@ -595,7 +637,7 @@ class StockController extends Controller
      * @return \Illuminate\Contracts\View\Factory|\Illuminate\View\View
      */
     public function addTableData(Request $request){
-        $forms = Form::where('warehouse_id',$request->id)->get();
+        $forms = Form::where('warehouse_id',$request->id)->orderBy('form_order', 'asc')->get();
         if($forms == null){
             return redirect('/stock/table/'.$request->id);
         }
@@ -618,24 +660,32 @@ class StockController extends Controller
     public function createTableData(Request $request){
         $forms = Form::where('warehouse_id',$request->warehouse_id)->get();
         $col_count = count($forms);
+        $chk_update = "not_update";
+        $record_id = null;
         //バリデーション
-        $validate = $this->makeValidate($request,$col_count,$request->warehouse_id);
+        $validate = $this->makeValidate($request,$col_count,$request->warehouse_id,$chk_update,$record_id);
         $request->validate($validate);
 
         $array = array();
         for($i=1;$i<=$col_count;$i++) {
             $pre_col_name = "col_" . $i;
             $form_type = Form::where('warehouse_id',$request->warehouse_id)->where("col_fictitious_name",$pre_col_name)->first();
+            //フォームタイプがチェックボックスの時
             if ($form_type["form_type_id"] == SystemDef::check_box) {
                 $ans = null;
-                foreach ($request->$pre_col_name as $array_box) {
-                    $ans .= $array_box.",";
+                if($request->$pre_col_name !== null){
+                    foreach ($request->$pre_col_name as $array_box) {
+                        $ans .= $array_box.",";
+                    }
+                    $ans = rtrim($ans, ',');
                 }
                 $ans_array = array($ans);
                 $array[$pre_col_name] = $ans_array[0];
 
+                //フォームタイプが画像の時
             }else if($form_type["form_type_id"] == SystemDef::img){
                 $filename = $request->$pre_col_name->store('public/'.$request->warehouse_id.'_warehouse_img');
+                Log::debug($filename);
                 $array[$pre_col_name] = basename($filename);
 
             } else {
@@ -654,7 +704,7 @@ class StockController extends Controller
      * @param $warehouse_id
      * @return array
      */
-    public function makeValidate($request,$col_count,$warehouse_id){
+    public function makeValidate($request,$col_count,$warehouse_id,$chk_update,$record_id){
         $array = array();
         for($i = 1;$i<=$col_count;$i++){
            $data = Form::where('warehouse_id',$warehouse_id)->where('col_fictitious_name',"col_".$i)->first();
@@ -682,11 +732,25 @@ class StockController extends Controller
                         switch($data['chk_nullable']){
                             case 0:
                                 //ユニーク制約ありかつnull非許可
-                                $array['col_'.$i] = "string|unique:".$warehouse_id."_warehouses|max:191|required";
+                                if($chk_update == "update"){
+                                    //データの編集時に使用する処理
+                                    $add_validate = $this->createUniqueValidate($warehouse_id."_warehouses",'col_'.$i,$record_id);
+                                    $array['col_'.$i] = "string|max:191|required|".$add_validate;
+                                }else {
+                                    //データの編集時以外で使用する処理
+                                    $array['col_' . $i] = "string|unique:" . $warehouse_id . "_warehouses|max:191|required";
+                                }
                                 break;
                             case 1:
                                 //ユニーク制約ありかつnullを許可
-                                $array['col_'.$i] = "string|unique:".$warehouse_id."_warehouses|nullable| max:191";
+                                if($chk_update == "update"){
+                                    //データの編集時に使用する処理
+                                    $add_validate = $this->createUniqueValidate($warehouse_id."_warehouses",'col_'.$i,$record_id);
+                                    $array['col_'.$i] = "string|max:191|nullable|".$add_validate;
+                                }else{
+                                    //データの編集時以外で使用する処理
+                                    $array['col_'.$i] = "string|unique:".$warehouse_id."_warehouses|max:191|nullable";
+                                }
                                 break;
                         }
                 }
@@ -713,11 +777,28 @@ class StockController extends Controller
                         switch($data['chk_nullable']){
                             case 0:
                                 //ユニーク制約ありかつnullを非許可
-                                $array['col_'.$i] = "integer|unique:".$warehouse_id."_warehouses|digits_between:1,11|required";
+                               // $array['col_'.$i] = "integer|unique:".$warehouse_id."_warehouses|digits_between:1,11|required";
+                                if($chk_update == "update"){
+                                    //データの編集時に使用する処理
+                                    $add_validate = $this->createUniqueValidate($warehouse_id."_warehouses",'col_'.$i,$record_id);
+                                    $array['col_'.$i] = "integer|digits_between:1,11|required|".$add_validate;
+                                }else{
+                                    //データの編集時以外で使用する処理
+                                    $array['col_'.$i] = "integer|unique:".$warehouse_id."_warehouses|digits_between:1,11|required";
+                                }
+
                                 break;
                             case 1:
                                 //ユニーク制約ありかつnullを許可
-                                $array['col_'.$i] = "integer|unique:".$warehouse_id."_warehouses|nullable|digits_between:1,11";
+                                //$array['col_'.$i] = "integer|unique:".$warehouse_id."_warehouses|nullable|digits_between:1,11";
+                                if($chk_update == "update"){
+                                    //データの編集時に使用する処理
+                                    $add_validate = $this->createUniqueValidate($warehouse_id."_warehouses",'col_'.$i,$record_id);
+                                    $array['col_'.$i] = "integer|digits_between:1,11|nullable|".$add_validate;
+                                }else{
+                                    //データの編集時以外で使用する処理
+                                    $array['col_'.$i] = "integer|unique:".$warehouse_id."_warehouses|digits_between:1,11|nullable";
+                                }
                                 break;
                         }
                 }
@@ -743,11 +824,27 @@ class StockController extends Controller
                             switch($data['chk_nullable']){
                                 case 0:
                                     //ユニーク制約ありかつnull非許可
-                                    $array['col_'.$i] = "unique:".$warehouse_id."_warehouses|max:191|required|array";
+                                    //$array['col_'.$i] = "unique:".$warehouse_id."_warehouses|max:191|required|array";
+                                    if($chk_update == "update"){
+                                        //データの編集時に使用する処理
+                                        $add_validate = $this->createUniqueValidate($warehouse_id."_warehouses",'col_'.$i,$record_id);
+                                        $array['col_'.$i] = "max:191|required|array|".$add_validate;
+                                    }else{
+                                        //データの編集時以外で使用する処理
+                                        $array['col_'.$i] = "unique:".$warehouse_id."_warehouses|max:191|required|array";
+                                    }
                                     break;
                                 case 1:
                                     //ユニーク制約ありかつnull許可
-                                    $array['col_'.$i] = "unique:".$warehouse_id."_warehouses|nullable| max:191|array";
+                                    //$array['col_'.$i] = "unique:".$warehouse_id."_warehouses|nullable| max:191|array";
+                                    if($chk_update == "update"){
+                                        //データの編集時に使用する処理
+                                        $add_validate = $this->createUniqueValidate($warehouse_id."_warehouses",'col_'.$i,$record_id);
+                                        $array['col_'.$i] = "max:191|nullable|array|".$add_validate;
+                                    }else{
+                                        //データの編集時以外で使用する処理
+                                        $array['col_'.$i] = "unique:".$warehouse_id."_warehouses|max:191|nullable|array";
+                                    }
                                     break;
                             }
                     }
@@ -772,11 +869,28 @@ class StockController extends Controller
                             switch($data['chk_nullable']){
                                 case 0:
                                     //ユニーク制約ありかつnull非許可
-                                    $array['col_'.$i] = "unique:".$warehouse_id."_warehouses|max:191|required|date";
+                                    //$array['col_'.$i] = "unique:".$warehouse_id."_warehouses|max:191|required|date";
+                                    if($chk_update == "update"){
+                                        //データの編集時に使用する処理
+                                        $add_validate = $this->createUniqueValidate($warehouse_id."_warehouses",'col_'.$i,$record_id);
+                                        $array['col_'.$i] = "max:191|required|date|".$add_validate;
+                                    }else{
+                                        //データの編集時以外で使用する処理
+                                        $array['col_'.$i] = "unique:".$warehouse_id."_warehouses|max:191|required|date";
+                                    }
                                     break;
                                 case 1:
                                     //ユニーク制約ありかつnull許可
-                                    $array['col_'.$i] = "unique:".$warehouse_id."_warehouses|nullable| max:191|date";
+                                    //$array['col_'.$i] = "unique:".$warehouse_id."_warehouses|nullable| max:191|date";
+                                    if($chk_update == "update"){
+                                        //データの編集時に使用する処理
+                                        $add_validate = $this->createUniqueValidate($warehouse_id."_warehouses",'col_'.$i,$record_id);
+                                        $array['col_'.$i] = "max:191|nullable|date|".$add_validate;
+                                    }else{
+                                        //データの編集時以外で使用する処理
+                                        $array['col_'.$i] = "unique:".$warehouse_id."_warehouses|max:191|nullable|date";
+                                    }
+                                    break;
                                     break;
                             }
                     }
@@ -827,7 +941,103 @@ class StockController extends Controller
         return view('stock.table_edit',$param);
     }
 
+    /**
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function deleteRecord(Request $request){
 
+        $form = DB::table($request->warehouse_id.'_warehouses')->where('id',$request->record_id)->get();
+        //削除機器を取得できなかった場合の処理
+        if($form == null){
+            $log_text = $this->setLogTextUser('delete','ID is NON');
+        }
+        //データベースの処理開始
+        DB::beginTransaction();
+        try{
+            DB::table($request->warehouse_id.'_warehouses')->where('id',$request->record_id)->delete();
+            DB::commit();
+            return redirect('/stock/table/'.$request->warehouse_id)->with(MessageDef::SUCCESS, MessageDef::SUCCESS_DELETE_USER);
+        }catch(\Exception $e) {
+            //エラー時
+            info($e->getMessage());
+            DB::rollBack();
+            return redirect('/stock/table/'.$request->warehouse_id)->with(MessageDef::ERROR, MessageDef::ERROR_DELETE);
+        }
+
+    }
+
+    public function editRecord(Request $request){
+        $record = DB::table($request->warehouse_id.'_warehouses')->where('id',$request->record_id)->first();
+        $warehouse =Warehouse::find($request->warehouse_id);
+        $forms = Form::where('warehouse_id',$request->warehouse_id)->get();
+        $i = 1;
+        $checkbox_value_array  = null;
+        foreach($forms as $form){
+            if($form['form_type_id']==SystemDef::check_box){
+                $col_name ="col_".$i;
+                $checkbox_value_array = explode(",",$record->$col_name );
+            }
+            $i += 1;
+        }
+
+        Log::debug($checkbox_value_array);
+        $param = [
+            'record' => $record,
+            'warehouse' =>$warehouse,
+            'forms' => $forms,
+            'checkbox_value_array'=>$checkbox_value_array,
+        ];
+        return view('stock.table_data_edit',$param);
+    }
+
+
+    public function updateRecord(Request $request){
+        $forms = Form::where('warehouse_id',$request->warehouse_id)->get();
+        $col_count = count($forms);
+        $chk_update = "update";
+        $record_id = $request->record_id;
+        //バリデーション
+        $validate = $this->makeValidate($request,$col_count,$request->warehouse_id,$chk_update,$record_id);
+        $request->validate($validate);
+
+        $array = array();
+        for($i=1;$i<=$col_count;$i++) {
+            $pre_col_name = "col_" . $i;
+            $form_type = Form::where('warehouse_id',$request->warehouse_id)->where("col_fictitious_name",$pre_col_name)->first();
+            //フォームタイプがチェックボックスの時
+            if ($form_type["form_type_id"] == SystemDef::check_box) {
+                $ans = null;
+                if($request->$pre_col_name !== null){
+                    foreach ($request->$pre_col_name as $array_box) {
+                        $ans .= $array_box.",";
+                    }
+                    $ans = rtrim($ans, ',');
+                }
+                $ans_array = array($ans);
+                $array[$pre_col_name] = $ans_array[0];
+
+                //フォームタイプが画像の時
+            }else if($form_type["form_type_id"] == SystemDef::img){
+                $filename = $request->$pre_col_name->store('public/'.$request->warehouse_id.'_warehouse_img');
+                Log::debug($filename);
+                $array[$pre_col_name] = basename($filename);
+
+            } else {
+                $array[$pre_col_name] = $request->$pre_col_name;
+                Log::debug(gettype($array[$pre_col_name]));
+            }
+        }
+        DB::table($request->warehouse_id.'_warehouses')->where('id',$request->record_id)-> update($array);
+        return redirect('/stock/table/'.$request->warehouse_id);
+    }
+
+    public function createUniqueValidate($table,$col,$record_id){
+        $record = DB::table($table)->where('id',$record_id)->first();
+        $record_col = $record->$col;
+        Log::debug($record_col);
+        return Rule::unique($table, $col)->whereNot($col, $record_col);
+    }
 
     /**
      * @param $id
@@ -839,8 +1049,6 @@ class StockController extends Controller
         return $selected_type[$col];
     }
 
-
-
     /**
      * @param $function
      * @return string
@@ -849,8 +1057,6 @@ class StockController extends Controller
     {
         return parent::setLogTextSuccess('stock_controller', $function); // TODO: Change the autogenerated stub
     }
-
-
 
     /**
      * @param $function
